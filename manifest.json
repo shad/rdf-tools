@@ -1,11 +1,11 @@
 {
-	"id": "sample-plugin",
-	"name": "Sample Plugin",
+	"id": "rdf-tools",
+	"name": "RDF Tools",
 	"version": "1.0.0",
 	"minAppVersion": "0.15.0",
-	"description": "Demonstrates some of the capabilities of the Obsidian API.",
-	"author": "Obsidian",
-	"authorUrl": "https://obsidian.md",
-	"fundingUrl": "https://obsidian.md/pricing",
-	"isDesktopOnly": false
+	"description": "Work with RDF data and SPARQL queries directly in your vault. Extract turtle code blocks as knowledge graphs and query them with live-updating SPARQL results.",
+	"author": "shad",
+	"authorUrl": "https://github.com/obsidianmd/rdf-tools",
+	"fundingUrl": "",
+	"isDesktopOnly": true
 }

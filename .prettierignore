@@ -1,0 +1,16 @@
+# Build outputs
+main.js
+dist/
+
+# Dependencies
+node_modules/
+
+# Generated files
+*.d.ts
+
+# Config files that should maintain their format
+package-lock.json
+versions.json
+
+# Markdown that might have specific formatting
+*.md

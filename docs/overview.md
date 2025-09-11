@@ -78,43 +78,16 @@ RDF Tools is an Obsidian plugin that enables working with RDF data directly with
 
 ### Test Organization
 
-```
-tests/
-  unit/           # Individual services and models
-  integration/    # Service interactions with real RDF libs  
-  plugin/         # Obsidian integration logic
-  fixtures/       # Sample turtle files and SPARQL queries
-```
+- unit tests should be stored along side the code in `__tests__/` directory.
 
 ## URI Resolution Strategy
 
-**Base URIs** - Each file gets `@base <vault://path/filename.md/>` for local entity resolution
-
-**Global Entities** - Use `vault:` prefix for entities shared across files
-
-**Identity Management** - Handle entity identity across files with canonical definitions and `owl:sameAs` assertions
+**Base URIs** - By default, the base should be set as follows for local entity resolution: `@base <vault://path/filename.md/>`
 
 ## Key Design Decisions
 
-- **Named Graphs** - Each file becomes a separate named graph for isolation and targeted querying
+- **Named Graphs** - Each file becomes a separate named graph for isolation and targeted querying. Each directory becomes a named graphs consisting of all contained files recursively.
 - **Live Updates** - Dependency tracking enables automatic query result updates
 - **Memory Management** - Lazy loading and caching strategies for large vaults
 - **Error Recovery** - Graceful degradation when parsing or queries fail
 
-## Additional Documentation
-
-For detailed implementation guidance, architectural decisions, and development workflows, see the `docs/` directory:
-
-- `docs/architecture.md` - Detailed system architecture and component interactions
-- `docs/api-reference.md` - Service interfaces and model specifications  
-- `docs/sparql-examples.md` - Example queries and use cases
-- `docs/uri-conventions.md` - URI resolution rules and best practices
-- `docs/performance.md` - Performance considerations and optimization strategies
-- `docs/deployment.md` - Build process, packaging, and distribution
-- `docs/contributing.md` - Development workflow and contribution guidelines
-
-## Development Status
-
-This is a work-in-progress project developed incrementally. The architecture is designed to be extensible and maintainable, with each component building on solid foundations from previous steps.
-
-Current focus is on establishing the core RDF processing layer with proper abstractions for testing and future enhancement.
