@@ -30,6 +30,7 @@
 	},
 	"dependencies": {
 		"@comunica/query-sparql": "^4.3.0",
-		"n3": "^1.26.0"
+		"n3": "^1.26.0",
+		"sparqljs": "^3.7.3"
 	}
 }
