@@ -1,0 +1,38 @@
+export interface RdfToolsSettings {
+  // Global prefix definitions that apply across all files
+  globalPrefixes: Record<string, string>;
+
+  // Cache settings
+  maxGraphCacheSize: number;
+  maxQueryCacheSize: number;
+
+  // Query execution settings
+  queryTimeout: number; // in milliseconds
+  maxQueryResults: number;
+
+  // UI settings
+  defaultResultFormat: 'table' | 'list' | 'count';
+  showQueryExecutionTime: boolean;
+
+  // Development/debug settings
+  enableDebugLogging: boolean;
+}
+
+export const DEFAULT_RDF_SETTINGS: RdfToolsSettings = {
+  globalPrefixes: {
+    rdf: 'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
+    rdfs: 'http://www.w3.org/2000/01/rdf-schema#',
+    owl: 'http://www.w3.org/2002/07/owl#',
+    xsd: 'http://www.w3.org/2001/XMLSchema#',
+    foaf: 'http://xmlns.com/foaf/0.1/',
+    dc: 'http://purl.org/dc/elements/1.1/',
+    dcterms: 'http://purl.org/dc/terms/',
+  },
+  maxGraphCacheSize: 100,
+  maxQueryCacheSize: 50,
+  queryTimeout: 30000, // 30 seconds
+  maxQueryResults: 1000,
+  defaultResultFormat: 'table',
+  showQueryExecutionTime: true,
+  enableDebugLogging: false,
+};
