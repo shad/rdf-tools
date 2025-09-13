@@ -1,6 +1,11 @@
 # vscode
 .vscode 
+
+# zed
 .zed
+
+# vitest coverage
+coverage
 
 # Intellij
 *.iml

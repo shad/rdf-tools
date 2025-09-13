@@ -1,6 +1,5 @@
 import esbuild from "esbuild";
 import process from "process";
-import builtins from "builtin-modules";
 
 const banner =
 `/*
@@ -30,8 +29,7 @@ const context = await esbuild.context({
 		"@codemirror/view",
 		"@lezer/common",
 		"@lezer/highlight",
-		"@lezer/lr",
-		...builtins],
+		"@lezer/lr"],
 	format: "cjs",
 	target: "es2018",
 	logLevel: "info",
@@ -39,6 +37,10 @@ const context = await esbuild.context({
 	treeShaking: true,
 	outfile: "main.js",
 	minify: prod,
+	define: {
+		'global': 'globalThis',
+		'process.env.NODE_ENV': JSON.stringify(prod ? 'production' : 'development'),
+	}
 });
 
 if (prod) {

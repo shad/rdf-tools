@@ -1,8 +1,413 @@
-/*
+/* RDF Tools Plugin Styles */
 
-This CSS file will be included with your plugin, and
-available in the app when your plugin is enabled.
+/* Turtle Block Result Modal Styles */
+.turtle-result-summary {
+  padding: 10px;
+  border-radius: 4px;
+  margin-bottom: 15px;
+}
 
-If your plugin does not need CSS, delete this file.
+.turtle-result-summary.success {
+  background-color: var(--background-modifier-success);
+  border: 1px solid var(--color-green);
+}
 
-*/
+.turtle-result-summary.error {
+  background-color: var(--background-modifier-error);
+  border: 1px solid var(--color-red);
+}
+
+.turtle-result-status {
+  font-weight: bold;
+  font-size: 1.1em;
+  margin-bottom: 5px;
+}
+
+.turtle-result-count {
+  font-size: 0.9em;
+  opacity: 0.8;
+}
+
+.turtle-prefixes table,
+.turtle-triples-preview table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+
+.turtle-prefixes th,
+.turtle-prefixes td,
+.turtle-triples-preview th,
+.turtle-triples-preview td {
+  padding: 8px;
+  text-align: left;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.turtle-prefixes th,
+.turtle-triples-preview th {
+  background-color: var(--background-modifier-border);
+  font-weight: bold;
+}
+
+.turtle-uri {
+  font-family: var(--font-monospace);
+  font-size: 0.9em;
+  word-break: break-all;
+}
+
+.turtle-term {
+  font-family: var(--font-monospace);
+  font-size: 0.85em;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.turtle-graph-info {
+  background-color: var(--background-secondary);
+  padding: 10px;
+  border-radius: 4px;
+  margin-top: 10px;
+}
+
+.turtle-graph-uri,
+.turtle-base-uri,
+.turtle-graph-status {
+  font-family: var(--font-monospace);
+  font-size: 0.9em;
+  margin: 5px 0;
+}
+
+.turtle-more-triples {
+  text-align: center;
+  font-style: italic;
+  margin-top: 10px;
+  opacity: 0.7;
+}
+
+.turtle-error-message,
+.turtle-parse-errors {
+  background-color: var(--background-secondary);
+  padding: 10px;
+  border-radius: 4px;
+  margin-top: 10px;
+}
+
+.turtle-error-message code,
+.turtle-parse-errors code {
+  background-color: var(--background-modifier-error-hover);
+  padding: 2px 4px;
+  border-radius: 2px;
+  font-size: 0.9em;
+}
+
+.turtle-parse-errors ul {
+  margin: 10px 0 0 0;
+  padding-left: 20px;
+}
+
+.turtle-parse-errors li {
+  margin-bottom: 5px;
+}
+
+/* Ribbon icon styles */
+.rdf-tools-ribbon-class {
+  color: var(--icon-color);
+}
+
+.rdf-tools-ribbon-class:hover {
+  color: var(--icon-color-hover);
+}
+
+/* RDF Tools Code Block Styles */
+
+/* Container styles for turtle and SPARQL blocks */
+.rdf-turtle-container,
+.rdf-sparql-container {
+  margin: 1em 0;
+}
+
+.rdf-turtle-code,
+.rdf-sparql-code {
+  margin-bottom: 0.5em;
+  border-radius: 6px;
+  background-color: var(--code-background);
+}
+
+.rdf-turtle-result,
+.rdf-sparql-result {
+  font-size: 0.9em;
+  line-height: 1.4;
+	table {
+		margin-top: 0;
+		margin-bottom: 0;
+	}
+}
+
+/* Success states */
+.rdf-result-success {
+  background-color: var(--background-modifier-success);
+  border-left: 3px solid var(--text-success);
+  color: var(--text-success);
+}
+
+.rdf-result-success .rdf-result-icon {
+  color: var(--text-success);
+  font-weight: bold;
+  margin-right: 0.5em;
+}
+
+.rdf-result-success .rdf-result-message {
+  font-weight: 500;
+}
+
+.rdf-result-success .rdf-result-metrics {
+  opacity: 0.7;
+  font-size: 0.85em;
+}
+
+/* Error states */
+.rdf-result-error {
+  background-color: transparent;
+  border-left: 3px solid #d73a49;
+  color: #d73a49;
+  padding: 0.75em;
+  border-radius: 6px;
+  font-weight: bold;
+}
+
+.rdf-result-error .rdf-result-icon {
+  color: #d73a49;
+  font-weight: bold;
+  margin-right: 0.5em;
+}
+
+.rdf-result-error .rdf-result-message {
+  font-weight: 500;
+  color: #d73a49;
+}
+
+.rdf-error-location,
+.rdf-error-type,
+.rdf-error-token,
+.rdf-error-context {
+  margin-top: 0.5em;
+  font-size: 0.85em;
+  opacity: 0.8;
+  color: #d73a49;
+}
+
+.rdf-error-context {
+  font-style: italic;
+}
+
+/* Loading states */
+.rdf-result-loading {
+  background-color: var(--background-modifier-border);
+  border-left: 3px solid var(--text-muted);
+  color: var(--text-muted);
+  padding: 0.75em;
+  border-radius: 6px;
+  font-style: italic;
+}
+
+/* Info states */
+.rdf-result-info {
+  background-color: var(--background-secondary);
+  border-left: 3px solid var(--text-accent);
+  color: var(--text-normal);
+  padding: 0.75em;
+  border-radius: 6px;
+}
+
+/* Empty results */
+.rdf-result-empty {
+  color: var(--text-muted);
+  font-style: italic;
+  text-align: center;
+  padding: 1em;
+}
+
+/* Prefix and FROM clause info */
+.rdf-prefix-info,
+.rdf-from-info,
+.rdf-from-named-info {
+  margin-top: 0.5em;
+  font-size: 0.85em;
+  color: var(--text-muted);
+}
+
+/* Warnings */
+.rdf-warnings {
+  margin-top: 0.5em;
+}
+
+.rdf-warning {
+  color: var(--text-warning);
+  font-size: 0.85em;
+  margin-bottom: 0.25em;
+}
+
+/* Results table */
+.rdf-results-table {
+  width: 100%;
+  margin-top: 0.5em;
+  border-collapse: collapse;
+  font-size: 0.9em;
+}
+
+.rdf-results-table th,
+.rdf-results-table td {
+  padding: 0.5em 0.75em;
+  text-align: left;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.rdf-results-table th {
+  background-color: var(--background-secondary);
+  font-weight: 600;
+  color: var(--text-normal);
+}
+
+.rdf-results-table td {
+  color: var(--text-normal);
+  word-break: break-word;
+}
+
+.rdf-results-table td.rdf-uri {
+  color: var(--text-accent);
+  font-family: var(--font-monospace);
+}
+
+.rdf-results-table tr:hover td {
+  background-color: var(--background-modifier-hover);
+}
+
+/* Construct results */
+.rdf-construct-result {
+  margin-top: 0.5em;
+  background-color: var(--code-background);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  font-family: var(--font-monospace);
+  font-size: 0.85em;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.rdf-construct-result code {
+  background: none;
+}
+
+/* ASK results */
+.rdf-ask-result {
+  display: inline-block;
+  padding: 0.5em 1em;
+  border-radius: 20px;
+  font-weight: bold;
+  font-family: var(--font-monospace);
+  font-size: 1.1em;
+  margin-top: 0.5em;
+}
+
+.rdf-ask-true {
+  background-color: var(--background-modifier-success);
+  color: var(--text-success);
+}
+
+.rdf-ask-false {
+  background-color: var(--background-modifier-error);
+  color: var(--text-error);
+}
+
+/* Truncation notice */
+.rdf-truncation-notice {
+  margin-top: 0.5em;
+  padding: 0.5em;
+  background-color: var(--background-secondary);
+  color: var(--text-muted);
+  font-size: 0.85em;
+  text-align: center;
+  border-radius: 6px;
+}
+
+/* Metrics display */
+.rdf-result-metrics {
+  margin-left: 0.5em;
+  font-size: 0.85em;
+  opacity: 0.7;
+}
+
+/* Ensure result containers are visible */
+.rdf-turtle-results-container,
+.rdf-sparql-results-container {
+  display: block;
+  margin-top: 0;
+  padding: 0;
+  min-height: 20px;
+}
+
+/* Turtle error containers */
+.rdf-turtle-error-container {
+  margin: 8px 0;
+  padding: 12px;
+  background-color: var(--background-modifier-error);
+  border: 1px solid var(--color-red);
+  border-left: 4px solid var(--color-red);
+  border-radius: 4px;
+  font-family: var(--font-interface);
+}
+
+.rdf-error-header {
+  font-weight: bold;
+  color: var(--color-red);
+  margin-bottom: 8px;
+  font-size: 0.9em;
+}
+
+.rdf-error-message {
+  color: var(--text-error);
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.rdf-error-context {
+  background-color: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 3px;
+  padding: 8px;
+  margin: 8px 0;
+  font-family: var(--font-monospace);
+  font-size: 0.8em;
+  color: var(--text-muted);
+  overflow-x: auto;
+  white-space: pre;
+}
+
+.rdf-error-content {
+  background-color: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 3px;
+  padding: 8px;
+  margin-top: 4px;
+  font-family: var(--font-monospace);
+  font-size: 0.8em;
+  color: var(--text-muted);
+  overflow-x: auto;
+  white-space: pre-wrap;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.rdf-turtle-error-container details summary {
+  cursor: pointer;
+  font-size: 0.85em;
+  color: var(--text-muted);
+  margin: 8px 0 4px 0;
+}
+
+.rdf-turtle-error-container details summary:hover {
+  color: var(--text-normal);
+}

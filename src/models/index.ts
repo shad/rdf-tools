@@ -3,3 +3,4 @@ export * from './Graph';
 export * from './TurtleBlock';
 export * from './SparqlQuery';
 export * from './QueryResults';
+export * from './RdfToolsSettings';

@@ -11,7 +11,7 @@ export default defineConfig({
     environment: 'happy-dom',
     
     // Test file patterns
-    include: ['tests/**/*.{test,spec}.{js,ts}'],
+    include: ['src/**/__tests__/**/*.{test,spec}.{js,ts}'],
     exclude: ['node_modules', 'dist', 'main.js'],
     
     // Global test setup
@@ -23,7 +23,7 @@ export default defineConfig({
       reporter: ['text', 'json', 'html'],
       exclude: [
         'node_modules/',
-        'tests/',
+        'src/**/__tests__/**/*',
         'dist/',
         'main.js',
         '*.config.*',
@@ -46,15 +46,14 @@ export default defineConfig({
     reporter: ['verbose'],
     
     // Setup files
-    setupFiles: ['./tests/helpers/setup.ts'],
+    setupFiles: ['./src/tests/helpers/setup.ts'],
   },
   
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
-      '@tests': path.resolve(__dirname, './tests'),
       // Mock obsidian package since it's not a real npm package
-      'obsidian': path.resolve(__dirname, './tests/helpers/obsidian-mock.ts'),
+      'obsidian': path.resolve(__dirname, './src/tests/helpers/obsidian-mock.ts'),
     },
   },
   

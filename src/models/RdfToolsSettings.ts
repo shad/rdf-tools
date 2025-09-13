@@ -14,6 +14,10 @@ export interface RdfToolsSettings {
   defaultResultFormat: 'table' | 'list' | 'count';
   showQueryExecutionTime: boolean;
 
+  // Auto-execution settings
+  autoExecuteQueries: boolean;
+  showDetailedErrors: boolean;
+
   // Development/debug settings
   enableDebugLogging: boolean;
 }
@@ -34,5 +38,7 @@ export const DEFAULT_RDF_SETTINGS: RdfToolsSettings = {
   maxQueryResults: 1000,
   defaultResultFormat: 'table',
   showQueryExecutionTime: true,
+  autoExecuteQueries: true,
+  showDetailedErrors: true,
   enableDebugLogging: false,
 };

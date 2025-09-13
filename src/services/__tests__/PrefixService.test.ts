@@ -1,30 +1,30 @@
 /**
- * Tests for PrefixManager utility
+ * Tests for PrefixService utility
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { PrefixManager } from '@/utils/prefixManager';
-import { createMockPrefixContext, createCommonPrefixes } from '@tests/helpers/test-utils';
+import { PrefixService } from '@/services/PrefixService';
+import { createMockPrefixContext, createCommonPrefixes } from '@/tests/helpers/test-utils';
 
-describe('PrefixManager', () => {
-  let prefixManager: PrefixManager;
+describe('PrefixService', () => {
+  let prefixService: PrefixService;
   let commonPrefixes: Record<string, string>;
 
   beforeEach(() => {
     commonPrefixes = createCommonPrefixes();
-    prefixManager = new PrefixManager(commonPrefixes);
+    prefixService = new PrefixService(commonPrefixes);
   });
 
   describe('constructor', () => {
     it('should initialize with global prefixes', () => {
-      const globalPrefixes = prefixManager.getGlobalPrefixes();
+      const globalPrefixes = prefixService.getGlobalPrefixes();
       
       expect(globalPrefixes).toEqual(commonPrefixes);
     });
 
     it('should initialize with empty prefixes when none provided', () => {
-      const emptyManager = new PrefixManager();
-      const globalPrefixes = emptyManager.getGlobalPrefixes();
+      const emptyService = new PrefixService();
+      const globalPrefixes = emptyService.getGlobalPrefixes();
       
       expect(globalPrefixes).toEqual({});
     });
@@ -37,8 +37,8 @@ describe('PrefixManager', () => {
         example: 'http://example.com/',
       };
 
-      prefixManager.updateGlobalPrefixes(newPrefixes);
-      const globalPrefixes = prefixManager.getGlobalPrefixes();
+      prefixService.updateGlobalPrefixes(newPrefixes);
+      const globalPrefixes = prefixService.getGlobalPrefixes();
 
       expect(globalPrefixes).toEqual(newPrefixes);
       expect(globalPrefixes).not.toContain('rdf');
@@ -50,7 +50,7 @@ describe('PrefixManager', () => {
       const localPrefixes = { local: 'http://local.org/' };
       const queryPrefixes = { query: 'http://query.org/' };
 
-      const context = prefixManager.createPrefixContext(localPrefixes, queryPrefixes);
+      const context = prefixService.createPrefixContext(localPrefixes, queryPrefixes);
 
       expect(context.globalPrefixes).toEqual(commonPrefixes);
       expect(context.localPrefixes).toEqual(localPrefixes);
@@ -58,7 +58,7 @@ describe('PrefixManager', () => {
     });
 
     it('should handle empty local and query prefixes', () => {
-      const context = prefixManager.createPrefixContext();
+      const context = prefixService.createPrefixContext();
 
       expect(context.globalPrefixes).toEqual(commonPrefixes);
       expect(context.localPrefixes).toEqual({});
@@ -74,7 +74,7 @@ describe('PrefixManager', () => {
         { query: 'http://query.org/', shared: 'http://query-shared.org/' }
       );
 
-      const merged = prefixManager.getMergedPrefixes(context);
+      const merged = prefixService.getMergedPrefixes(context);
 
       expect(merged.global).toBe('http://global.org/');
       expect(merged.local).toBe('http://local.org/');
@@ -86,7 +86,7 @@ describe('PrefixManager', () => {
   describe('expandCurie', () => {
     it('should expand valid CURIE', () => {
       const context = createMockPrefixContext();
-      const result = prefixManager.expandCurie('foaf:Person', context);
+      const result = prefixService.expandCurie('foaf:Person', context);
 
       expect(result.success).toBe(true);
       expect(result.resolvedUri).toBe('http://xmlns.com/foaf/0.1/Person');
@@ -95,7 +95,7 @@ describe('PrefixManager', () => {
 
     it('should return error for unknown prefix', () => {
       const context = createMockPrefixContext();
-      const result = prefixManager.expandCurie('unknown:term', context);
+      const result = prefixService.expandCurie('unknown:term', context);
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('Unknown prefix: unknown');
@@ -103,7 +103,7 @@ describe('PrefixManager', () => {
 
     it('should return error for invalid CURIE format', () => {
       const context = createMockPrefixContext();
-      const result = prefixManager.expandCurie('invalid-curie', context);
+      const result = prefixService.expandCurie('invalid-curie', context);
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('Not a valid CURIE format');
@@ -112,7 +112,7 @@ describe('PrefixManager', () => {
     it('should handle already expanded URIs', () => {
       const context = createMockPrefixContext();
       const uri = 'http://example.org/resource';
-      const result = prefixManager.expandCurie(uri, context);
+      const result = prefixService.expandCurie(uri, context);
 
       expect(result.success).toBe(true);
       expect(result.resolvedUri).toBe(uri);
@@ -123,7 +123,7 @@ describe('PrefixManager', () => {
       const context = createMockPrefixContext(
         { '': 'http://default.org/' }
       );
-      const result = prefixManager.expandCurie(':term', context);
+      const result = prefixService.expandCurie(':term', context);
 
       expect(result.success).toBe(true);
       expect(result.resolvedUri).toBe('http://default.org/term');
@@ -135,7 +135,7 @@ describe('PrefixManager', () => {
         { test: 'http://local.org/' },
         { test: 'http://query.org/' }
       );
-      const result = prefixManager.expandCurie('test:resource', context);
+      const result = prefixService.expandCurie('test:resource', context);
 
       expect(result.success).toBe(true);
       expect(result.resolvedUri).toBe('http://query.org/resource'); // Query prefix wins
@@ -145,14 +145,14 @@ describe('PrefixManager', () => {
   describe('createCurie', () => {
     it('should create CURIE from full URI', () => {
       const context = createMockPrefixContext();
-      const curie = prefixManager.createCurie('http://xmlns.com/foaf/0.1/Person', context);
+      const curie = prefixService.createCurie('http://xmlns.com/foaf/0.1/Person', context);
 
       expect(curie).toBe('foaf:Person');
     });
 
     it('should return null for URI without matching prefix', () => {
       const context = createMockPrefixContext();
-      const curie = prefixManager.createCurie('http://unknown.org/resource', context);
+      const curie = prefixService.createCurie('http://unknown.org/resource', context);
 
       expect(curie).toBeNull();
     });
@@ -164,7 +164,7 @@ describe('PrefixManager', () => {
           long: 'http://example.org/specific/',
         }
       );
-      const curie = prefixManager.createCurie('http://example.org/specific/resource', context);
+      const curie = prefixService.createCurie('http://example.org/specific/resource', context);
 
       expect(curie).toBe('long:resource'); // Longer namespace should win
     });
@@ -175,11 +175,11 @@ describe('PrefixManager', () => {
       });
       
       // Valid local name
-      const validCurie = prefixManager.createCurie('http://test.org/validName', context);
+      const validCurie = prefixService.createCurie('http://test.org/validName', context);
       expect(validCurie).toBe('test:validName');
 
       // Invalid local name (contains spaces)
-      const invalidCurie = prefixManager.createCurie('http://test.org/invalid name', context);
+      const invalidCurie = prefixService.createCurie('http://test.org/invalid name', context);
       expect(invalidCurie).toBeNull();
     });
   });
@@ -192,7 +192,7 @@ describe('PrefixManager', () => {
         @prefix ex: <http://example.org/> .
       `;
 
-      const prefixes = prefixManager.extractPrefixesFromTurtle(turtle);
+      const prefixes = prefixService.extractPrefixesFromTurtle(turtle);
 
       expect(prefixes).toEqual({
         rdf: 'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
@@ -203,7 +203,7 @@ describe('PrefixManager', () => {
 
     it('should handle default prefix', () => {
       const turtle = '@prefix : <http://default.org/> .';
-      const prefixes = prefixManager.extractPrefixesFromTurtle(turtle);
+      const prefixes = prefixService.extractPrefixesFromTurtle(turtle);
 
       expect(prefixes['']).toBe('http://default.org/');
     });
@@ -215,14 +215,14 @@ describe('PrefixManager', () => {
         ex:alice a foaf:Person .
       `;
 
-      const prefixes = prefixManager.extractPrefixesFromTurtle(turtle);
+      const prefixes = prefixService.extractPrefixesFromTurtle(turtle);
 
       expect(Object.keys(prefixes)).toHaveLength(1);
       expect(prefixes.ex).toBe('http://example.org/');
     });
 
     it('should handle empty content', () => {
-      const prefixes = prefixManager.extractPrefixesFromTurtle('');
+      const prefixes = prefixService.extractPrefixesFromTurtle('');
       expect(prefixes).toEqual({});
     });
   });
@@ -234,7 +234,7 @@ describe('PrefixManager', () => {
         foaf: 'http://xmlns.com/foaf/0.1/',
       };
 
-      const declarations = prefixManager.generatePrefixDeclarations(prefixes);
+      const declarations = prefixService.generatePrefixDeclarations(prefixes);
 
       expect(declarations).toContain('@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .');
       expect(declarations).toContain('@prefix foaf: <http://xmlns.com/foaf/0.1/> .');
@@ -242,13 +242,13 @@ describe('PrefixManager', () => {
 
     it('should handle default prefix', () => {
       const prefixes = { '': 'http://default.org/' };
-      const declarations = prefixManager.generatePrefixDeclarations(prefixes);
+      const declarations = prefixService.generatePrefixDeclarations(prefixes);
 
       expect(declarations).toBe('@prefix : <http://default.org/> .');
     });
 
     it('should handle empty prefixes', () => {
-      const declarations = prefixManager.generatePrefixDeclarations({});
+      const declarations = prefixService.generatePrefixDeclarations({});
       expect(declarations).toBe('');
     });
   });
@@ -258,7 +258,7 @@ describe('PrefixManager', () => {
       const existing = { shared: 'http://existing.org/', unique1: 'http://unique1.org/' };
       const incoming = { shared: 'http://incoming.org/', unique2: 'http://unique2.org/' };
 
-      const result = prefixManager.resolveConflicts(existing, incoming);
+      const result = prefixService.resolveConflicts(existing, incoming);
 
       expect(result.conflicts).toHaveLength(1);
       expect(result.conflicts[0]).toEqual({
@@ -276,7 +276,7 @@ describe('PrefixManager', () => {
       const existing = { ex1: 'http://example1.org/' };
       const incoming = { ex2: 'http://example2.org/' };
 
-      const result = prefixManager.resolveConflicts(existing, incoming);
+      const result = prefixService.resolveConflicts(existing, incoming);
 
       expect(result.conflicts).toHaveLength(0);
       expect(result.merged).toEqual({
@@ -289,7 +289,7 @@ describe('PrefixManager', () => {
   describe('static methods', () => {
     describe('getCommonPrefixes', () => {
       it('should return common RDF prefixes', () => {
-        const common = PrefixManager.getCommonPrefixes();
+        const common = PrefixService.getCommonPrefixes();
 
         expect(common.rdf).toBe('http://www.w3.org/1999/02/22-rdf-syntax-ns#');
         expect(common.rdfs).toBe('http://www.w3.org/2000/01/rdf-schema#');
@@ -309,10 +309,10 @@ describe('PrefixManager', () => {
           { query: 'http://query.org/' }
         );
 
-        expect(prefixManager.getPrefixPrecedence('global', context)).toBe(1);
-        expect(prefixManager.getPrefixPrecedence('local', context)).toBe(2);
-        expect(prefixManager.getPrefixPrecedence('query', context)).toBe(3);
-        expect(prefixManager.getPrefixPrecedence('unknown', context)).toBe(0);
+        expect(prefixService.getPrefixPrecedence('global', context)).toBe(1);
+        expect(prefixService.getPrefixPrecedence('local', context)).toBe(2);
+        expect(prefixService.getPrefixPrecedence('query', context)).toBe(3);
+        expect(prefixService.getPrefixPrecedence('unknown', context)).toBe(0);
       });
     });
 
@@ -323,7 +323,7 @@ describe('PrefixManager', () => {
           { prefix3: 'http://example.org/' }
         );
 
-        const matches = prefixManager.findPrefixesForNamespace('http://example.org/', context);
+        const matches = prefixService.findPrefixesForNamespace('http://example.org/', context);
 
         expect(matches).toHaveLength(3);
         expect(matches).toContain('prefix1');
@@ -334,19 +334,19 @@ describe('PrefixManager', () => {
 
     describe('validatePrefixDeclaration', () => {
       it('should validate valid prefix declarations', () => {
-        expect(prefixManager.validatePrefixDeclaration('valid', 'http://example.org/')).toBe(true);
-        expect(prefixManager.validatePrefixDeclaration('', 'http://default.org/')).toBe(true); // Default prefix
-        expect(prefixManager.validatePrefixDeclaration('prefix_123', 'https://secure.org/')).toBe(true);
+        expect(prefixService.validatePrefixDeclaration('valid', 'http://example.org/')).toBe(true);
+        expect(prefixService.validatePrefixDeclaration('', 'http://default.org/')).toBe(true); // Default prefix
+        expect(prefixService.validatePrefixDeclaration('prefix_123', 'https://secure.org/')).toBe(true);
       });
 
       it('should reject invalid prefix names', () => {
-        expect(prefixManager.validatePrefixDeclaration('123invalid', 'http://example.org/')).toBe(false);
-        expect(prefixManager.validatePrefixDeclaration('invalid-name', 'http://example.org/')).toBe(false);
+        expect(prefixService.validatePrefixDeclaration('123invalid', 'http://example.org/')).toBe(false);
+        expect(prefixService.validatePrefixDeclaration('invalid-name', 'http://example.org/')).toBe(false);
       });
 
       it('should reject invalid namespace URIs', () => {
-        expect(prefixManager.validatePrefixDeclaration('valid', 'not-a-uri')).toBe(false);
-        expect(prefixManager.validatePrefixDeclaration('valid', '')).toBe(false);
+        expect(prefixService.validatePrefixDeclaration('valid', 'not-a-uri')).toBe(false);
+        expect(prefixService.validatePrefixDeclaration('valid', '')).toBe(false);
       });
     });
 
@@ -358,7 +358,7 @@ describe('PrefixManager', () => {
           foo: 'http://example.org/foo/',
         });
 
-        const suggestions = prefixManager.getSuggestionsForPrefix('foa', context);
+        const suggestions = prefixService.getSuggestionsForPrefix('foa', context);
 
         expect(suggestions).toContain('foaf');
         expect(suggestions).toContain('foo');
@@ -372,7 +372,7 @@ describe('PrefixManager', () => {
         }
 
         const context = createMockPrefixContext(manyPrefixes);
-        const suggestions = prefixManager.getSuggestionsForPrefix('test', context);
+        const suggestions = prefixService.getSuggestionsForPrefix('test', context);
 
         expect(suggestions.length).toBeLessThanOrEqual(5);
       });

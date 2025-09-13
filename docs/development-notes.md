@@ -5,7 +5,7 @@ RDF Tools is an Obsidian plugin that enables working with RDF data directly with
 ## Core Features
 
 - **Turtle Block Processing** - Extract and parse `turtle` code blocks from markdown files
-- **Graph Management** - Each file becomes a named graph with URI scheme `vault://path/filename.md#`
+- **Graph Management** - Each file becomes a named graph with URI scheme `vault://path/filename.md/`
 - **SPARQL Querying** - Execute queries across the current page graph or target specific files with `FROM` and `FROM NAMED` clauses. A special graph, <vault://> queries across all files in the entire vault.  Similarly, <vault://foo/> will query all files in the foo sub-directory (and subdirectories)
 - **Live Updates** - SPARQL query results update automatically when underlying turtle data changes
 - **Prefix Management** - Global and file-local prefix support with intelligent merging
@@ -23,8 +23,6 @@ RDF Tools is an Obsidian plugin that enables working with RDF data directly with
 **PrefixService** - Manages global and file-local prefix mappings and resolution
 
 **DependencyService** - Tracks query dependencies on graphs for live update functionality
-
-**CacheService** - Manages query result caching and graph parsing caches
 
 ### Core Models
 
@@ -73,16 +71,6 @@ RDF Tools is an Obsidian plugin that enables working with RDF data directly with
 - **Mock External, Test Internal** - Mock RDF libraries and Obsidian APIs, test your business logic
 - **Test Data Builders** - Create programmatic helpers for generating test graphs and queries
 - **Async Patterns** - Establish consistent patterns for testing promises, events, and timeouts
-
-### Test Organization
-
-```
-tests/
-  unit/           # Individual services and models
-  integration/    # Service interactions with real RDF libs  
-  plugin/         # Obsidian integration logic
-  fixtures/       # Sample turtle files and SPARQL queries
-```
 
 ## URI Resolution Strategy
 

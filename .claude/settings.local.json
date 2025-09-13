@@ -4,7 +4,8 @@
       "Bash(find:*)",
       "Bash(awk:*)",
       "Bash(npm run check-all:*)",
-      "Bash(npm run test:run:*)"
+      "Bash(npm run test:run:*)",
+      "Bash(npm run build:*)"
     ],
     "deny": [],
     "ask": []

@@ -2,11 +2,12 @@
  * Global test setup for vitest
  * This file is run once before all tests
  */
-
-import { vi } from 'vitest';
+import { TFolder, Vault } from 'obsidian';
 
 // Mock Obsidian's TFile class for testing
 export class MockTFile {
+  vault: Vault;
+  parent: TFolder;
   path: string;
   name: string;
   basename: string;
@@ -27,17 +28,6 @@ export class MockTFile {
     };
   }
 }
-
-// Obsidian is mocked via vitest.config.ts alias
-
-// Keep console.log available for debugging
-// We can selectively suppress it in specific tests if needed
-const originalConsole = { ...console };
-
-// Restore console for debugging when needed
-export const restoreConsole = () => {
-  Object.assign(console, originalConsole);
-};
 
 // Test timeout for async operations
 export const TEST_TIMEOUT = 5000;

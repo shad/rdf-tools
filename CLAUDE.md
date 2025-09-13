@@ -42,41 +42,68 @@ npm run format:check # Check formatting without fixing
 npm run typecheck    # TypeScript type checking only
 ```
 
+## Acceptance Criteria
+
+- User can edit a document in obsidian
+
+- User can add `turtle` code blocks (in the normal way)
+
+- When user moves cursor outside of turtle block, code should be parsed and errors shown below the block
+
+- User can add `sparql` code blocks (in the normal way)
+
+- When the cursor exists a `sparql` block
+  - the query should be parsed, and errors noted below the query (or inline)
+  - the query should be executed, and results shown below the query
+
+- For SPARQL queries
+  - If FROM clause is not specfied, the query is run against the current file/graph only.
+  - If FROM clause is specified, then the query is run against the specified graph(s) only (possibly not the current file)
+
+- When a file with SPARQL a query is open, that query is executed automatically as changes occur in the same document, or other documents
+
+- While  the query is executing, "loading" message should display. 
+- Once the query is complete, results should be shown below:
+  - SELECT queries should be followed by a table of the results of the query
+  - CONSTRUCT queries should be followed by syntax highlighted turtle
+  - DESCRIBE queries should follow CONSTRUCT semantics
+  - ASK queries should produce true/false (simple monospace font)
+
+- As turtle is updated in an open file, the SPARQL in any open file should be updated immediately. The user should not need to "Run" the query. 
+
+- SPARQL queries can specify other files/directory graphs in their FROM clause.
+  - [no from] - query the current file graph ONLY. If a FROM clause exists, do not include the current file by default.
+  - FROM <vault://somefile.md> or FROM <vault://somedirectory/somefile.md> - query only the referenced file, and nothing else.
+  - FROM <vault://somedirectory/> - query all files contained in this directory, recursively
+  - FROM <vault://> - query across data in all files in the system
+  - FROM <vault://someturtle.ttl> - A .ttl file has been added directly to the vault, please use it to query.
+
+- When defining turtle in a file, the base for urls should be <vault://somedirectory/somefile.md/>
+  - in `somefile.md` if I have `<test>` then the IRI would expand to <vault://somedirectory/somefile.md/test>
+
+- SPARQL queries should always have a core set of default prefixes defined (rdf, rdfs, owl, foaf, etc)
+
+- SPARQL query code block should check query for correctness using sparqljs when the user moves out of the block. If there are errors, they should be presented below the query code block.
+
 ## Project Structure
 
 The project follows a layered architecture with clean separation of concerns:
 
 ```
 src/
-├── main.ts                 # Plugin entry point, lifecycle management
-├── services/              # Core RDF processing services
-│   ├── GraphService.ts     # Graph storage and management
-│   ├── QueryService.ts     # SPARQL query execution
-│   ├── ParsingService.ts   # Turtle parsing and validation
-│   ├── PrefixService.ts    # Prefix management
-│   ├── DependencyService.ts # Query dependency tracking
-│   └── CacheService.ts     # Caching and optimization
-├── models/                # Data models and interfaces
-│   ├── Graph.ts           # Graph model and metadata
-│   ├── SparqlQuery.ts     # Query model and context
-│   ├── TurtleBlock.ts     # Turtle block representation
-│   └── QueryResults.ts    # Result formatting and display
-├── ui/                    # Obsidian UI components
-│   ├── SettingsTab.ts     # Plugin configuration UI
-│   ├── StatusBar.ts       # Status indicators
-│   └── PostProcessor.ts   # Markdown result rendering
-├── utils/                 # Helper utilities
-│   ├── uriResolver.ts     # URI canonicalization
-│   ├── errorHandler.ts    # Error management
-│   └── performance.ts     # Performance monitoring
-├── types/                 # TypeScript type definitions
-│   └── index.ts           # Core type definitions
-└── __tests__/             # Test files alongside source
+├── main.ts          # Plugin entry point, lifecycle management
+├── services/        # Core RDF processing services
+│   └── *Service.ts  # Services should end in "Service"
+├── models/          # Data models and interfaces
+│   └── *.ts         # Models contain data containers, and manipulation functions
+├── ui/              # Obsidian UI components
+├── utils/           # Helper utilities
+├── tests/           # Tests infrastructure
+└── types/           # TypeScript type definitions
 ```
 
 ## File & Folder Conventions
 
-- **Organize code into multiple files**: Split functionality across separate modules rather than putting everything in `main.ts`
 - **Source lives in `src/`**: Keep `main.ts` small and focused on plugin lifecycle (loading, unloading, registering commands)
 - **Service Layer Pattern**: Each service has a specific responsibility and can be tested independently
 - **Dependency Injection**: Services accept dependencies through constructors for easy mocking and testing
@@ -87,24 +114,22 @@ src/
 ### RDF Data Processing
 - **Turtle Block Detection**: Extract and parse `turtle` code blocks from markdown files
 - **Graph Management**: Each file becomes a named graph with URI scheme `vault://path/filename.md`
-- **URI Resolution**: Base URIs set as `@base <vault://path/filename.md/>` for local entity resolution
+- **URI Resolution**: Base URIs set as `@base <vault://path/filename.md/>` for local entity resolution while parsing
 
 ### SPARQL Query Execution  
 - **Query Processing**: Execute SPARQL queries using Comunica engine
 - **Graph Selection**: Support `FROM` and `FROM NAMED` clauses for targeted querying
 - **Live Updates**: Query results update automatically when underlying turtle data changes
-- **Result Formatting**: Table, list, count, and custom formatting options
 
 ### Performance & Scalability
 - **Lazy Loading**: Load graphs on-demand to manage memory usage
 - **Incremental Updates**: Only reprocess changed turtle blocks
 - **Dependency Tracking**: Smart invalidation of affected queries
-- **Caching Strategy**: Multi-level caching for graphs and query results
 
 ## Development Workflow
 
 ### Code Quality Standards
-- **TypeScript Strict Mode**: Enforce strict typing throughout codebase
+- **TypeScript Strict Mode**: Enforce strict typing throughout codebase, no `any` types
 - **ESLint Rules**: Comprehensive linting with TypeScript-specific rules
 - **Prettier Formatting**: Consistent code formatting (single quotes, 80-char width, 2-space tabs)
 - **All-in-One Quality Check**: Use `npm run check-all` to format, fix lint issues, and type check in one command
@@ -117,7 +142,7 @@ src/
 
 ### Error Handling
 - **Graceful Degradation**: Continue processing valid blocks when some fail
-- **User Feedback**: Meaningful error messages and recovery guidance  
+- **User Feedback**: Meaningful error messages and recovery guidance
 - **Partial Failures**: Handle file-level and block-level errors independently
 - **Debugging Support**: Comprehensive logging and diagnostic capabilities
 
@@ -125,7 +150,7 @@ src/
 
 Key settings in `manifest.json`:
 - `id`: "rdf-tools" (stable, never change after release)
-- `isDesktopOnly`: true (RDF processing complexity requires desktop environment)
+- `isDesktopOnly`: true (RDF processing complexity requires desktop environment) TODO: is this really true?
 - `minAppVersion`: Set appropriately for required Obsidian API features
 - `description`: Clear description of RDF and SPARQL capabilities
 
@@ -139,7 +164,6 @@ Key settings in `manifest.json`:
 
 ## Performance Considerations
 
-- **Memory Management**: Configurable cache sizes and eviction policies
 - **Query Optimization**: Query plan caching and selective graph loading
 - **Background Processing**: Expensive operations don't block UI
 - **Incremental Loading**: Process changes incrementally rather than full reloads

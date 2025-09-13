@@ -29,7 +29,7 @@ export interface PrefixResolutionResult {
  *
  * Leverages N3.js DataFactory for consistent URI handling
  */
-export class PrefixManager {
+export class PrefixService {
   private globalPrefixes: Record<string, string>;
 
   constructor(globalPrefixes: Record<string, string> = {}) {
@@ -230,6 +230,7 @@ export class PrefixManager {
 
   /**
    * Get commonly used RDF prefixes
+   * @deprecated Use RdfToolsSettings.globalPrefixes instead
    */
   static getCommonPrefixes(): Record<string, string> {
     return {

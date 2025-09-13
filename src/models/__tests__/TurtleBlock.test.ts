@@ -4,7 +4,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { TurtleBlockFactory, TurtleBlockUtils } from '@/models/TurtleBlock';
-import { createMockBlockLocation, createSampleTurtleContent } from '@tests/helpers/test-utils';
+import { createMockBlockLocation, createSampleTurtleContent } from '@/tests/helpers/test-utils';
 
 describe('TurtleBlockFactory', () => {
   describe('generateBlockId', () => {

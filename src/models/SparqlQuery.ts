@@ -361,6 +361,18 @@ export class SparqlQueryUtils {
   }
 
   /**
+   * Extract query type from sparqljs parsed query object
+   * Handles both queryType and type properties from different versions
+   */
+  static extractQueryType(parsedQuery: ParsedSparqlQuery): string {
+    const queryWithType = parsedQuery as unknown as {
+      queryType?: string;
+      type?: string;
+    };
+    return queryWithType.queryType || parsedQuery.type || 'UNKNOWN';
+  }
+
+  /**
    * Get human-readable status description
    */
   static getStatusDescription(query: SparqlQuery): string {

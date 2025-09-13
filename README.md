@@ -9,7 +9,6 @@ An Obsidian plugin that enables working with RDF data and SPARQL queries directl
 - ⚡ **Live Updates** - Query results automatically update when underlying turtle data changes
 - 🗂️ **Named Graphs** - Each file becomes a named graph with URI scheme `vault://path/filename.md`
 - 🏷️ **Prefix Management** - Global and file-local prefix support with intelligent merging
-- 📊 **Result Formatting** - Table, list, count, and custom formatting options for query results
 
 ## Example Usage
 
@@ -49,8 +48,6 @@ RDF Tools follows a layered architecture designed for performance, testability, 
 - **QueryService** - SPARQL execution with Comunica engine
 - **ParsingService** - Turtle syntax parsing and validation
 - **PrefixService** - Namespace and prefix management
-- **DependencyService** - Change tracking for live updates
-- **CacheService** - Multi-level caching for performance
 
 ### URI Resolution
 - Base URI: `@base <vault://path/filename.md/>` for each file
@@ -95,8 +92,7 @@ src/
 ├── models/               # Data models and interfaces  
 ├── ui/                   # Obsidian UI components
 ├── utils/                # Helper utilities
-├── types/                # TypeScript definitions
-└── __tests__/            # Test files
+└── types/                # TypeScript definitions
 ```
 
 ### Testing Strategy

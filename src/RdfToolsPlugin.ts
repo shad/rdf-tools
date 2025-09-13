@@ -1,137 +1,76 @@
 import {
-  App,
   Editor,
-  MarkdownView,
   Notice,
   Plugin,
   TFile,
 } from 'obsidian';
 
-import { RdfToolsSettings, DEFAULT_RDF_SETTINGS } from './types';
+import { RdfToolsSettings, DEFAULT_RDF_SETTINGS } from './models/RdfToolsSettings';
 import { RdfToolsSettingsTab } from './ui/RdfToolsSettingsTab';
-import { SampleModal } from './ui/SampleModal';
+import { SparqlQueryDetailsModal } from './ui/SparqlQueryDetailsModal';
+import { SparqlQueryFactory } from './models/SparqlQuery';
+import { RdfToolsService } from './services/RdfToolsService';
 
 export class RdfToolsPlugin extends Plugin {
   settings: RdfToolsSettings;
+  statusBarItemEl: HTMLElement;
+  rdfService: RdfToolsService;
 
   async onload() {
     await this.loadSettings();
 
-    // This creates an icon in the left ribbon for RDF Tools
-    const ribbonIconEl = this.addRibbonIcon(
-      'database',
-      'RDF Tools',
-      (evt: MouseEvent) => {
-        new Notice('RDF Tools - Ready to process turtle and SPARQL!');
-      }
-    );
-    ribbonIconEl.addClass('rdf-tools-ribbon-class');
+    // Initialize services
+    this.rdfService = this.addChild(new RdfToolsService(this.app, this, this.settings));
 
-    // Status bar item for RDF Tools
-    const statusBarItemEl = this.addStatusBarItem();
-    statusBarItemEl.setText('RDF Tools: Ready');
+    try {
 
-    // Command to open sample modal (will be replaced with RDF-specific modals)
-    this.addCommand({
-      id: 'open-rdf-sample-modal',
-      name: 'Open RDF Tools sample modal',
-      callback: () => {
-        new SampleModal(this.app).open();
-      },
-    });
-
-    // Editor command for processing turtle blocks (placeholder)
-    this.addCommand({
-      id: 'process-turtle-block',
-      name: 'Process turtle block at cursor',
-      editorCallback: (editor: Editor, view: MarkdownView) => {
-        const selection = editor.getSelection();
-        if (selection) {
-          // TODO: Implement turtle block processing
-          new Notice(`Processing turtle block: ${selection.substring(0, 50)}...`);
-        } else {
-          new Notice('Select a turtle code block to process');
-        }
-      },
-    });
-
-    // Command to execute SPARQL query (placeholder)
-    this.addCommand({
-      id: 'execute-sparql-query',
-      name: 'Execute SPARQL query at cursor',
-      editorCallback: (editor: Editor, view: MarkdownView) => {
-        const selection = editor.getSelection();
-        if (selection) {
-          // TODO: Implement SPARQL query execution
-          new Notice(`Executing SPARQL query: ${selection.substring(0, 50)}...`);
-        } else {
-          new Notice('Select a SPARQL query block to execute');
-        }
-      },
-    });
-
-    // Complex command that checks for markdown view
-    this.addCommand({
-      id: 'refresh-rdf-graphs',
-      name: 'Refresh RDF graphs in current note',
-      checkCallback: (checking: boolean) => {
-        const markdownView = this.app.workspace.getActiveViewOfType(MarkdownView);
-        if (markdownView) {
-          if (!checking) {
-            // TODO: Implement graph refresh logic
-            new Notice('Refreshing RDF graphs in current note...');
-          }
-          return true;
-        }
-      },
-    });
+      // Status bar item for RDF Tools
+      // this.statusBarItemEl = this.addStatusBarItem();
+      // this.statusBarItemEl.setText('RDF Tools: Ready');
+    } catch (error) {
+      console.error('RDF Tools: Failed to initialize:', error);
+      this.statusBarItemEl = this.addStatusBarItem();
+      this.statusBarItemEl.setText('RDF Tools: Error');
+    }
 
     // Add settings tab
     this.addSettingTab(new RdfToolsSettingsTab(this.app, this));
 
+    // Add commands
+    this.registerCommands();
+
     // Register for file changes to detect turtle block modifications
     this.registerEvent(
-      this.app.vault.on('modify', (file) => {
-        if (file instanceof TFile && file.extension === 'md') {
-          // TODO: Check if file contains turtle blocks and update graphs
-          if (this.settings.enableDebugLogging) {
-            console.log(`RDF Tools: File modified: ${file.path}`);
-          }
+      this.app.vault.on('modify', async (file) => {
+        if (file instanceof TFile) {
+          await this.rdfService.onFileModified(file);
         }
       })
     );
 
     // Register for file creation to detect new turtle content
     this.registerEvent(
-      this.app.vault.on('create', (file) => {
-        if (file instanceof TFile && file.extension === 'md') {
-          if (this.settings.enableDebugLogging) {
-            console.log(`RDF Tools: File created: ${file.path}`);
-          }
+      this.app.vault.on('create', async (file) => {
+        if (file instanceof TFile) {
+          await this.rdfService.onFileCreated(file);
         }
       })
     );
 
     // Register for file deletion to clean up graphs
     this.registerEvent(
-      this.app.vault.on('delete', (file) => {
-        if (file instanceof TFile && file.extension === 'md') {
-          // TODO: Remove graphs associated with deleted file
-          if (this.settings.enableDebugLogging) {
-            console.log(`RDF Tools: File deleted: ${file.path}`);
-          }
+      this.app.vault.on('delete', async (file) => {
+        if (file instanceof TFile) {
+          await this.rdfService.onFileDeleted(file);
         }
       })
     );
 
     // Register for file rename to update graph URIs
     this.registerEvent(
-      this.app.vault.on('rename', (file, oldPath) => {
-        if (file instanceof TFile && file.extension === 'md') {
-          // TODO: Update graph URIs when files are renamed
-          if (this.settings.enableDebugLogging) {
-            console.log(`RDF Tools: File renamed: ${oldPath} -> ${file.path}`);
-          }
+      this.app.vault.on('rename', async (file, oldPath) => {
+        if (file instanceof TFile) {
+          await this.rdfService.onFileRenamed(file, oldPath);
         }
       })
     );
@@ -141,7 +80,11 @@ export class RdfToolsPlugin extends Plugin {
     }
   }
 
-  onunload() {
+  async onunload() {
+    if (this.rdfService) {
+      await this.rdfService.onunload();
+    }
+
     if (this.settings.enableDebugLogging) {
       console.log('RDF Tools plugin unloaded');
     }
@@ -156,32 +99,156 @@ export class RdfToolsPlugin extends Plugin {
   }
 
   /**
-   * Get the base URI for a given file path
+   * Register plugin commands
    */
-  getBaseUri(filePath: string): string {
-    return `vault://${filePath}/`;
+  private registerCommands(): void {
+    // Copy file graph IRI command
+    this.addCommand({
+      id: 'copy-file-graph-iri',
+      name: 'Copy file graph IRI',
+      callback: () => {
+        this.copyFileGraphIri();
+      },
+    });
+
+    // SPARQL Query Details command
+    this.addCommand({
+      id: 'sparql-query-details',
+      name: 'SPARQL Query Details',
+      editorCallback: (editor: Editor) => {
+        this.showSparqlQueryDetails(editor);
+      },
+    });
   }
 
   /**
-   * Get the named graph URI for a given file path
+   * Copy the current file's graph IRI to clipboard
    */
-  getNamedGraphUri(filePath: string): string {
-    return `vault://${filePath}`;
-  }
-
-  /**
-   * Check if debug logging is enabled
-   */
-  isDebugEnabled(): boolean {
-    return this.settings.enableDebugLogging;
-  }
-
-  /**
-   * Log debug message if debug logging is enabled
-   */
-  debug(message: string, ...args: any[]) {
-    if (this.isDebugEnabled()) {
-      console.log(`[RDF Tools] ${message}`, ...args);
+  private async copyFileGraphIri(): Promise<void> {
+    const activeFile = this.app.workspace.getActiveFile();
+    if (!activeFile) {
+      new Notice('No active file to copy graph IRI from');
+      return;
     }
+
+    try {
+      const graphUri = this.rdfService.getGraphService().getGraphUriForFile(activeFile.path);
+      await navigator.clipboard.writeText(graphUri);
+      new Notice(`Copied graph IRI: ${graphUri}`);
+    } catch (error) {
+      console.error('Failed to copy graph IRI:', error);
+      new Notice('Failed to copy graph IRI to clipboard');
+    }
+  }
+
+  /**
+   * Show SPARQL query details modal for the query under cursor
+   */
+  private async showSparqlQueryDetails(editor: Editor): Promise<void> {
+    const activeFile = this.app.workspace.getActiveFile();
+    if (!activeFile) {
+      new Notice('No active file');
+      return;
+    }
+
+    try {
+      // Extract SPARQL query from editor
+      const sparqlQuery = this.extractSparqlQueryFromEditor(editor);
+      if (!sparqlQuery) {
+        new Notice('No SPARQL query found at cursor position');
+        return;
+      }
+
+      // Parse the query
+      const parseResult = await this.rdfService.getSparqlParserService().parseSparqlContent(sparqlQuery);
+      if (!parseResult.success) {
+        new Notice(`Query parse error: ${parseResult.error?.message}`);
+        return;
+      }
+
+      // Create a SparqlQuery model using the factory
+      const query = SparqlQueryFactory.createSparqlQuery({
+        location: {
+          file: activeFile,
+          startLine: editor.getCursor().line,
+          endLine: editor.getCursor().line,
+          startColumn: 0,
+          endColumn: 0,
+        },
+        queryString: sparqlQuery,
+        baseUri: this.rdfService.getGraphService().getGraphUriForFile(activeFile.path),
+        prefixes: parseResult.prefixes || {},
+        timeoutMs: this.settings.queryTimeout,
+        maxResults: this.settings.maxQueryResults,
+      });
+
+      // Set the parsed query
+      query.parsedQuery = parseResult.parsedQuery;
+
+      // Update context with FROM clauses from parse result
+      if (parseResult.fromGraphs) {
+        query.context.fromGraphs = parseResult.fromGraphs;
+      }
+      if (parseResult.fromNamedGraphs) {
+        query.context.fromNamedGraphs = parseResult.fromNamedGraphs;
+      }
+
+      // Generate execution details
+      const details = await this.rdfService.getQueryExecutorService().generateExecutionDetails(query);
+
+      // Show modal
+      const modal = new SparqlQueryDetailsModal(this.app, details);
+      modal.open();
+
+    } catch (error) {
+      console.error('Error showing SPARQL query details:', error);
+      new Notice('Failed to analyze SPARQL query');
+    }
+  }
+
+  /**
+   * Extract SPARQL query from editor at cursor position
+   */
+  private extractSparqlQueryFromEditor(editor: Editor): string | null {
+    const cursor = editor.getCursor();
+    const content = editor.getValue();
+    const lines = content.split('\n');
+
+    // Find SPARQL code block containing the cursor
+    let inSparqlBlock = false;
+    let blockStartLine = -1;
+    let blockEndLine = -1;
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+
+      if (line.startsWith('```sparql')) {
+        inSparqlBlock = true;
+        blockStartLine = i + 1;
+        continue;
+      }
+
+      if (inSparqlBlock && line.startsWith('```')) {
+        blockEndLine = i;
+
+        // Check if cursor is within this block
+        if (cursor.line >= blockStartLine && cursor.line < blockEndLine) {
+          const queryLines = lines.slice(blockStartLine, blockEndLine);
+          return queryLines.join('\n');
+        }
+
+        inSparqlBlock = false;
+        blockStartLine = -1;
+        blockEndLine = -1;
+      }
+    }
+
+    // If we're still in a block (unclosed), check if cursor is within
+    if (inSparqlBlock && blockStartLine !== -1 && cursor.line >= blockStartLine) {
+      const queryLines = lines.slice(blockStartLine);
+      return queryLines.join('\n');
+    }
+
+    return null;
   }
 }
