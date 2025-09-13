@@ -171,4 +171,12 @@ Key settings in `manifest.json`:
 - **Integration Testing**: Test service interactions with controlled inputs
 - **Error Scenarios**: Test error handling and recovery paths
 
+## TypeScript Guidelines
+
+**NEVER use `any` as a type** - Always use proper TypeScript types:
+- Use specific interfaces and types from libraries (e.g., `Term`, `Quad` from `n3`)
+- Create union types or generics instead of `any`
+- Use type assertions with proper types: `error as TurtleParseError` not `error as any`
+- Import proper types from dependencies rather than falling back to `any`
+
 This project implements a sophisticated RDF processing system within Obsidian while maintaining clean architecture, comprehensive testing, and excellent developer experience.

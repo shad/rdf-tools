@@ -492,8 +492,8 @@ export class RdfErrorUtils {
   static formatError(error: RdfError): string {
     let formatted = `[${error.code}] ${error.message}`;
 
-    if ('location' in error && (error as any).location) {
-      const loc = (error as any).location;
+    if ('location' in error && error.location) {
+      const loc = error.location as ErrorLocation;
       formatted += ` (at ${loc.filePath}:${loc.line + 1}:${loc.column + 1})`;
     }
 
@@ -519,19 +519,22 @@ export class RdfErrorUtils {
       helpUrl: error.helpUrl,
       // Include specific error type fields
       ...('parseErrorType' in error
-        ? { parseErrorType: (error as any).parseErrorType }
+        ? { parseErrorType: (error as TurtleParseError).parseErrorType }
         : {}),
       ...('executionErrorType' in error
-        ? { executionErrorType: (error as any).executionErrorType }
+        ? {
+            executionErrorType: (error as SparqlExecutionError)
+              .executionErrorType,
+          }
         : {}),
       ...('graphErrorType' in error
-        ? { graphErrorType: (error as any).graphErrorType }
+        ? { graphErrorType: (error as GraphError).graphErrorType }
         : {}),
       ...('validationType' in error
-        ? { validationType: (error as any).validationType }
+        ? { validationType: (error as ValidationError).validationType }
         : {}),
-      ...('location' in error && (error as any).location
-        ? { location: (error as any).location }
+      ...('location' in error && error.location
+        ? { location: error.location }
         : {}),
     };
   }

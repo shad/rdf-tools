@@ -1,5 +1,3 @@
-import { DataFactory } from 'n3';
-
 /**
  * Context for prefix resolution
  */
@@ -93,7 +91,7 @@ export class PrefixManager {
 
     // Parse the CURIE
     const colonIndex = curie.indexOf(':');
-    if (colonIndex <= 0) {
+    if (colonIndex < 0) {
       return {
         success: false,
         error: 'Not a valid CURIE format (missing prefix)',
@@ -114,18 +112,21 @@ export class PrefixManager {
       };
     }
 
-    // Use N3.js DataFactory to create a proper named node and get its value
+    // Concatenate namespace and local name to create the full URI
+    const expandedUri = namespaceUri + localName;
+
+    // Validate that the result is a proper URI
     try {
-      const namedNode = DataFactory.namedNode(namespaceUri + localName);
+      new URL(expandedUri);
       return {
         success: true,
-        resolvedUri: namedNode.value,
+        resolvedUri: expandedUri,
         usedPrefix: prefix,
       };
     } catch (error) {
       return {
         success: false,
-        error: `Failed to create URI: ${error}`,
+        error: `Invalid URI result: ${expandedUri}`,
       };
     }
   }
@@ -250,9 +251,11 @@ export class PrefixManager {
    */
   private isAbsoluteUri(str: string): boolean {
     try {
-      new URL(str);
-      return true;
-    } catch {
+      const url = new URL(str);
+      // Only treat as absolute URI if it has a recognized scheme and authority
+      const validSchemes = ['http', 'https', 'ftp', 'file', 'urn'];
+      return validSchemes.includes(url.protocol.slice(0, -1));
+    } catch (error) {
       return false;
     }
   }
@@ -299,7 +302,7 @@ export class PrefixManager {
    */
   validatePrefixDeclaration(prefix: string, namespace: string): boolean {
     // Validate prefix name (empty string is allowed for default prefix)
-    if (prefix !== '' && !/^[a-zA-Z_][a-zA-Z0-9_.-]*$/.test(prefix)) {
+    if (prefix !== '' && !/^[a-zA-Z_][a-zA-Z0-9_.]*$/.test(prefix)) {
       return false;
     }
 

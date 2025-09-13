@@ -3,7 +3,8 @@
     "allow": [
       "Bash(find:*)",
       "Bash(awk:*)",
-      "Bash(npm run check-all:*)"
+      "Bash(npm run check-all:*)",
+      "Bash(npm run test:run:*)"
     ],
     "deny": [],
     "ask": []

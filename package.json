@@ -2,6 +2,7 @@
 	"name": "obsidian-rdf-tools",
 	"version": "1.0.0",
 	"description": "RDF Tools for Obsidian - Work with RDF data and SPARQL queries directly in your vault",
+	"type": "module",
 	"main": "main.js",
 	"scripts": {
 		"dev": "node esbuild.config.mjs",
@@ -9,24 +10,35 @@
 		"version": "node version-bump.mjs && git add manifest.json versions.json",
 		"lint": "eslint src/**/*.ts",
 		"lint:fix": "eslint src/**/*.ts --fix",
-		"format": "prettier --write src/**/*.ts",
-		"format:check": "prettier --check src/**/*.ts",
+		"format": "prettier --write src/**/*.ts tests/**/*.ts",
+		"format:check": "prettier --check src/**/*.ts tests/**/*.ts",
 		"typecheck": "tsc -noEmit -skipLibCheck",
-		"check-all": "npm run format && npm run lint:fix && npm run typecheck"
+		"test": "vitest",
+		"test:run": "vitest run",
+		"test:ui": "vitest --ui",
+		"test:coverage": "vitest run --coverage",
+		"test:watch": "vitest --watch",
+		"check-all": "npm run format && npm run lint:fix && npm run typecheck && npm run test:run"
 	},
 	"keywords": [],
 	"author": "shad",
 	"license": "MIT",
+	"engines": {
+		"node": ">=18.0.0"
+	},
 	"devDependencies": {
-		"@types/node": "^16.11.6",
-		"@typescript-eslint/eslint-plugin": "5.29.0",
-		"@typescript-eslint/parser": "5.29.0",
+		"@types/node": "^18.19.0",
+		"@typescript-eslint/eslint-plugin": "^6.21.0",
+		"@typescript-eslint/parser": "^6.21.0",
+		"@vitest/ui": "^3.2.4",
 		"builtin-modules": "3.3.0",
-		"esbuild": "0.17.3",
+		"esbuild": "^0.19.0",
+		"happy-dom": "^18.0.1",
 		"obsidian": "latest",
 		"prettier": "^3.6.2",
-		"tslib": "2.4.0",
-		"typescript": "4.7.4"
+		"tslib": "2.6.2",
+		"typescript": "^5.3.0",
+		"vitest": "^3.2.4"
 	},
 	"dependencies": {
 		"@comunica/query-sparql": "^4.3.0",

@@ -1,5 +1,6 @@
 import { SparqlQuery, QueryPerformance } from './SparqlQuery';
 import { Bindings } from '@comunica/types';
+import { Term, Quad } from 'n3';
 
 /**
  * Supported result formats for query output
@@ -53,12 +54,7 @@ export interface FormattedQueryResults {
   readonly booleanResult?: boolean;
 
   /** Quads (for CONSTRUCT/DESCRIBE queries) */
-  readonly quads?: Array<{
-    subject: any;
-    predicate: any;
-    object: any;
-    graph?: any;
-  }>;
+  readonly quads?: Quad[];
 
   /** Formatting options used */
   readonly formattingOptions: ResultFormattingOptions;
@@ -272,7 +268,7 @@ export class QueryResultsUtils {
     const rows = bindings.slice(0, maxRows).map(binding => {
       return variables
         .map(variable => {
-          const term = (binding as any)[variable];
+          const term = binding.get(variable) as Term | undefined;
           return term ? term.value : '';
         })
         .join('\t');
