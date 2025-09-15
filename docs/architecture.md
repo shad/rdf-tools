@@ -48,14 +48,16 @@ RDF Tools is architected as a layered system that bridges Obsidian's file-based 
 
 **Components**:
 - `GraphService` - Graph storage and manipulation
-- `QueryService` - SPARQL query execution
-- `ParsingService` - Turtle syntax parsing and validation
+- `QueryExecutorService` - SPARQL query execution with Comunica engine
+- `SparqlQueryTracker` - Cross-file dependency tracking and live update coordination
+- `TurtleParserService` - Turtle syntax parsing and validation
 - `PrefixService` - Namespace and prefix management
-- `SerializationService` - RDF data serialization/deserialization
 
 **Responsibilities**:
 - RDF triple storage and retrieval
 - SPARQL query parsing and execution
+- Cross-file dependency analysis and tracking
+- Live update coordination when data changes
 - Turtle syntax processing
 - Namespace resolution
 - Data validation and error reporting
@@ -82,29 +84,21 @@ RDF Tools is architected as a layered system that bridges Obsidian's file-based 
 ```
 Markdown File Change
         ↓
-    FileMonitor
+    RdfToolsService (debounced)
         ↓
-    Extract Turtle Blocks
+    Extract & Parse Turtle Blocks
         ↓
-    ParsingService
+    GraphService.invalidateGraph()
         ↓
-    Validate & Parse Turtle
+    SparqlQueryTracker.findQueriesDependingOnGraph()
         ↓
-    GraphService
+    Parallel Re-execution of Dependent Queries
         ↓
-    Update Named Graph
+    DOM Container Recovery (if needed)
         ↓
-    DependencyTracker
+    QueryExecutorService
         ↓
-    Identify Affected Queries
-        ↓
-    QueryExecutor
-        ↓
-    Re-execute Dependent Queries
-        ↓
-    MarkdownPostProcessor
-        ↓
-    Update UI Results
+    Update SPARQL Results in UI
 ```
 
 ### Query Execution Pipeline
@@ -112,29 +106,23 @@ Markdown File Change
 ```
 SPARQL Code Block
         ↓
-    Extract Query & Options
+    SparqlParserService.parse()
         ↓
-    QueryService
+    SparqlQueryTracker.registerQuery()
         ↓
-    Parse & Validate SPARQL
+    Analyze FROM/FROM NAMED Dependencies
         ↓
-    DependencyTracker
+    QueryExecutorService.determineTargetGraphs()
         ↓
-    Register Dependencies
+    GraphService.getGraphs() (lazy loading)
         ↓
-    CacheService
+    Construct SPARQL Dataset (default/named graphs)
         ↓
-    Check Result Cache
+    Comunica Engine Execution
         ↓
-    Comunica Engine
+    Format Results by Query Type
         ↓
-    Execute Against Graphs
-        ↓
-    Format Results
-        ↓
-    Cache & Return
-        ↓
-    Render in UI
+    Render in UI Container
 ```
 
 ## Component Interactions
@@ -142,38 +130,50 @@ SPARQL Code Block
 ### Service Dependencies
 
 ```
-GraphManager
+RdfToolsService
     ├── GraphService
-    ├── ParsingService
+    ├── QueryExecutorService
+    ├── SparqlQueryTracker
+    ├── TurtleParserService
+    ├── SparqlParserService
+    └── PrefixService
+
+QueryExecutorService
+    ├── GraphService
+    └── Comunica QueryEngine
+
+SparqlQueryTracker
+    ├── GraphService (for URI resolution)
+    └── SparqlQuery (for dependency analysis)
+
+GraphService
+    ├── MarkdownGraphParser
     ├── PrefixService
-    └── CacheService
-
-QueryExecutor
-    ├── QueryService
-    ├── DependencyTracker
-    ├── CacheService
-    └── GraphService
-
-DependencyTracker
-    ├── QueryService (for query analysis)
-    └── GraphService (for graph metadata)
+    └── N3 Store
 ```
 
 ### Event Flow
 
 **File Change Events**:
-1. FileMonitor detects change
-2. GraphManager processes turtle blocks
-3. DependencyTracker identifies affected queries
-4. QueryExecutor re-runs dependent queries
-5. UI updates with new results
+1. RdfToolsService detects change (debounced)
+2. GraphService invalidates affected graph
+3. SparqlQueryTracker identifies dependent queries
+4. Parallel re-execution of affected queries
+5. DOM container recovery if needed
+6. UI updates with new results
 
-**Query Execution Events**:
-1. User modifies SPARQL block
-2. QueryExecutor parses and validates
-3. DependencyTracker registers dependencies
-4. Query execution against relevant graphs
-5. Results cached and rendered
+**Query Registration Events**:
+1. User creates/modifies SPARQL block
+2. SparqlParserService parses and validates query
+3. SparqlQueryTracker registers query and analyzes dependencies
+4. QueryExecutorService executes query
+5. Results rendered in UI container
+
+**Live Update Events**:
+1. Turtle data change in File A triggers graph invalidation
+2. SparqlQueryTracker finds queries in Files B, C, D that depend on File A
+3. Queries re-execute in parallel with timeout protection
+4. DOM containers updated with fresh results
 
 ## Graph Storage Architecture
 
@@ -254,6 +254,85 @@ Vault Root
 3. URI resolution for display
 4. Markdown generation
 5. Obsidian rendering
+
+## Live Update System Architecture
+
+### SparqlQueryTracker Service
+
+**Purpose**: Manages cross-file dependencies between SPARQL queries and turtle data sources.
+
+**Core Functionality**:
+- **Query Registration**: Tracks all active SPARQL queries across open files
+- **Dependency Analysis**: Analyzes FROM/FROM NAMED clauses to identify graph dependencies
+- **Live Updates**: Coordinates automatic query re-execution when dependencies change
+- **Container Management**: Maintains DOM container references for result updates
+
+**Key Data Structures**:
+```typescript
+interface SparqlQueryInfo {
+  id: string;                    // Unique query identifier
+  query: SparqlQuery;            // Parsed SPARQL query object
+  container: HTMLElement;        // DOM container for results
+  file: TFile;                   // File containing the query
+  dependentGraphs: string[];     // Graph URIs this query depends on
+  lastExecuted: Date;            // Execution timestamp
+  isExecuting: boolean;          // Execution state flag
+}
+```
+
+**Lookup Optimizations**:
+- `queriesByFile`: Map file paths to queries for file-based operations
+- `queriesByGraph`: Map graph URIs to dependent queries for change propagation
+- `queryById`: Fast query lookup by unique identifier
+
+### Dependency Analysis Process
+
+**FROM Clause Analysis**:
+1. Extract FROM and FROM NAMED clauses from parsed SPARQL
+2. Resolve `vault://` URIs using GraphService.resolveVaultUri()
+3. Handle directory patterns (e.g., `vault://folder/` → all files in folder)
+4. Default behavior: no FROM clauses = current file dependency only
+
+**Query Lifecycle Management**:
+1. **Registration**: Query registered when SPARQL block processed
+2. **Updates**: Dependencies re-analyzed when query content changes
+3. **Cleanup**: Query unregistered when file closed or block removed
+4. **Container Recovery**: DOM references updated after markdown re-rendering
+
+### Live Update Coordination
+
+**File Change Pipeline**:
+1. `RdfToolsService.onFileModified()` detects turtle data changes
+2. Debounced processing (300ms) to batch rapid changes
+3. `GraphService.invalidateGraph()` clears cached graph data
+4. `SparqlQueryTracker.findQueriesDependingOnGraph()` finds affected queries
+5. Parallel re-execution with timeout protection (10 seconds)
+6. DOM container recovery for stale references
+7. Fresh results rendered in UI
+
+**Performance Optimizations**:
+- **Debouncing**: Prevents excessive re-execution during rapid editing
+- **Parallel Processing**: Multiple queries execute simultaneously
+- **Container Recovery**: Handles Obsidian's DOM regeneration gracefully
+- **Lazy Loading**: Graphs loaded only when needed for queries
+
+### DOM Container Management
+
+**Challenge**: Obsidian regenerates markdown DOM when files change, invalidating stored container references.
+
+**Solution**:
+1. Detect stale containers using `document.body.contains()`
+2. Search for updated containers by matching query text
+3. Update container references in tracking maps
+4. Fallback to query unregistration if container not found
+
+**Container Search Strategy**:
+```typescript
+// Find SPARQL code blocks with matching query text
+const sparqlBlocks = viewContainer.querySelectorAll('[data-lang="sparql"]');
+// Locate result container following the code block
+const resultContainer = block.nextElementSibling;
+```
 
 ## Caching Strategy
 

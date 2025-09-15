@@ -6,9 +6,11 @@ An Obsidian plugin that enables working with RDF data and SPARQL queries directl
 
 - 🐢 **Turtle Code Blocks** - Write RDF data directly in markdown using `turtle` code blocks
 - 🔍 **SPARQL Queries** - Execute SPARQL queries against your RDF data with `sparql` code blocks
-- ⚡ **Live Updates** - Query results automatically update when underlying turtle data changes
+- ⚡ **Live Updates** - Query results automatically update when underlying turtle data changes across files
+- 🔗 **Cross-File Dependencies** - SPARQL queries automatically detect and track dependencies on turtle data in other files
 - 🗂️ **Named Graphs** - Each file becomes a named graph with URI scheme `vault://path/filename.md`
 - 🏷️ **Prefix Management** - Global and file-local prefix support with intelligent merging
+- 🎯 **Smart Graph Loading** - Efficient lazy loading with proper SPARQL dataset construction for FROM/FROM NAMED clauses
 
 ## Example Usage
 
@@ -39,14 +41,45 @@ SELECT ?person ?name WHERE {
 ```
 ````
 
+### Cross-File Live Updates
+
+The plugin automatically tracks dependencies between SPARQL queries and turtle data across files:
+
+````markdown
+<!-- File: people/contacts.md -->
+```turtle
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+@prefix : <vault://people/contacts.md/> .
+
+:alice a foaf:Person ;
+    foaf:name "Alice Smith" ;
+    foaf:knows :bob .
+```
+
+<!-- File: queries/social-network.md -->
+```sparql
+PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+
+SELECT ?person ?name
+FROM <vault://people/contacts.md>
+WHERE {
+    ?person a foaf:Person ;
+            foaf:name ?name .
+}
+```
+````
+
+When you modify the turtle data in `people/contacts.md`, the SPARQL query in `queries/social-network.md` automatically re-executes and displays updated results - no manual refresh needed!
+
 ## Architecture
 
 RDF Tools follows a layered architecture designed for performance, testability, and extensibility:
 
 ### Core Services
 - **GraphService** - Graph storage and management using N3.js
-- **QueryService** - SPARQL execution with Comunica engine
-- **ParsingService** - Turtle syntax parsing and validation
+- **QueryExecutorService** - SPARQL execution with Comunica engine
+- **SparqlQueryTracker** - Cross-file dependency tracking and live update coordination
+- **TurtleParserService** - Turtle syntax parsing and validation
 - **PrefixService** - Namespace and prefix management
 
 ### URI Resolution
@@ -138,36 +171,42 @@ src/
 
 ## Roadmap
 
-### Phase 1: Foundation ✅ 
+### Phase 1: Foundation ✅
 - [x] Project setup and architecture
 - [x] Build system and development workflow
-- [ ] Core type definitions and models
+- [x] Core type definitions and models
 
-### Phase 2: RDF Processing (In Progress)
-- [ ] Turtle block detection and parsing
-- [ ] N3.js integration for graph storage
-- [ ] Basic URI resolution and base URI handling
+### Phase 2: RDF Processing ✅
+- [x] Turtle block detection and parsing
+- [x] N3.js integration for graph storage
+- [x] URI resolution and base URI handling
+- [x] Prefix management system
 
-### Phase 3: SPARQL Engine
-- [ ] Comunica integration
-- [ ] Query parsing and execution
-- [ ] Basic result formatting
+### Phase 3: SPARQL Engine ✅
+- [x] Comunica integration
+- [x] Query parsing and execution
+- [x] Result formatting (SELECT, CONSTRUCT, ASK, DESCRIBE)
+- [x] Proper SPARQL dataset construction (FROM/FROM NAMED)
 
-### Phase 4: File System Integration
-- [ ] File monitoring and change detection
-- [ ] Incremental graph updates
-- [ ] Dependency tracking
+### Phase 4: File System Integration ✅
+- [x] File monitoring and change detection
+- [x] Incremental graph updates
+- [x] Cross-file dependency tracking
+- [x] Live query updates
 
-### Phase 5: UI Integration
-- [ ] Markdown post-processing for results
-- [ ] Settings panel and configuration
-- [ ] Error handling and user feedback
+### Phase 5: UI Integration ✅
+- [x] Markdown post-processing for results
+- [x] Settings panel and configuration
+- [x] Error handling and user feedback
+- [x] DOM container management for live updates
 
-### Phase 6: Advanced Features
-- [ ] Live query updates
-- [ ] Performance optimization
-- [ ] Advanced result formatting
+### Phase 6: Advanced Features 🚧
+- [x] Live query updates
+- [x] Performance optimization (lazy loading, caching, debouncing)
+- [x] Advanced result formatting
 - [ ] Query debugging tools
+- [ ] Visual graph explorer
+- [ ] Query builder interface
 
 ## Contributing
 
@@ -199,6 +238,6 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ---
 
-**Status**: 🚧 Early development - not yet ready for production use
+**Status**: 🎯 Core functionality complete - ready for beta testing
 
-This plugin is being developed incrementally with a focus on solid foundations, comprehensive testing, and excellent user experience.
+This plugin implements a complete RDF processing system with live-updating SPARQL queries. The core architecture is solid and extensively tested, with advanced features still in development.
