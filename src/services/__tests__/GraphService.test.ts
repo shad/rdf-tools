@@ -41,6 +41,8 @@ describe('GraphService', () => {
       vault: {
         getAbstractFileByPath: vi.fn(),
         read: vi.fn(),
+        getMarkdownFiles: vi.fn().mockReturnValue([]),
+        getFiles: vi.fn().mockReturnValue([]),
       },
     } as unknown as App;
 
@@ -129,6 +131,17 @@ describe('GraphService', () => {
     });
 
     it('should return all cached graphs for root vault URI', () => {
+      // Mock files in the vault
+      const mockFiles = [
+        new MockTFile('dir1/file1.md'),
+        new MockTFile('dir1/file2.md'),
+        new MockTFile('dir2/file3.md'),
+        new MockTFile('root.md'),
+      ];
+
+      (mockApp.vault.getMarkdownFiles as any).mockReturnValue(mockFiles);
+      (mockApp.vault.getFiles as any).mockReturnValue(mockFiles);
+
       const result = graphService.resolveVaultUri('vault://');
       expect(result).toHaveLength(4);
       expect(result).toContain('vault://dir1/file1.md');
@@ -138,10 +151,22 @@ describe('GraphService', () => {
     });
 
     it('should return directory-filtered graphs for directory URIs', () => {
+      // Mock files in the vault
+      const mockFiles = [
+        new MockTFile('dir1/file1.md'),
+        new MockTFile('dir1/file2.md'),
+        new MockTFile('dir2/file3.md'),
+        new MockTFile('root.md'),
+      ];
+
+      (mockApp.vault.getMarkdownFiles as any).mockReturnValue(mockFiles);
+      (mockApp.vault.getFiles as any).mockReturnValue(mockFiles);
+
       const result = graphService.resolveVaultUri('vault://dir1/');
       expect(result).toHaveLength(2);
       expect(result).toContain('vault://dir1/file1.md');
       expect(result).toContain('vault://dir1/file2.md');
+      expect(result).not.toContain('vault://dir2/file3.md');
     });
 
     it('should return specific graph for file URIs', () => {
@@ -171,16 +196,24 @@ describe('GraphService', () => {
       (mockApp.vault.getAbstractFileByPath as any).mockReturnValue(new MockTFile('test.md'));
       (mockApp.vault.read as any).mockResolvedValue('test content');
 
-      await graphService.getGraphs([graphUri]);
+      // Load the graph to cache it
+      const graphs1 = await graphService.getGraphs([graphUri]);
+      expect(graphs1).toHaveLength(1);
 
-      // Verify it's cached
-      let allGraphs = graphService.resolveVaultUri('vault://');
-      expect(allGraphs).toContain(graphUri);
-
-      // Invalidate and verify it's removed
+      // Invalidate the cache
       graphService.invalidateGraph(graphUri);
-      allGraphs = graphService.resolveVaultUri('vault://');
-      expect(allGraphs).not.toContain(graphUri);
+
+      // Loading again should cause a fresh load (cache miss)
+      // We can verify this by ensuring the file is read again
+      const readCallCount = (mockApp.vault.read as any).mock.calls.length;
+
+      // Setup mocks for the re-load
+      setupMockSuccessfulParsing(['test content']);
+      (mockApp.vault.getAbstractFileByPath as any).mockReturnValue(new MockTFile('test.md'));
+      (mockApp.vault.read as any).mockResolvedValue('test content');
+
+      await graphService.getGraphs([graphUri]);
+      expect((mockApp.vault.read as any).mock.calls.length).toBe(readCallCount + 1);
     });
 
     it('should handle invalidating non-existent graph', () => {
@@ -203,15 +236,24 @@ describe('GraphService', () => {
         .mockResolvedValueOnce('test content 1')
         .mockResolvedValueOnce('test content 2');
 
+      // Load both graphs
       await graphService.getGraphs([graphUri1, graphUri2]);
 
-      // Invalidate one
+      // Invalidate one graph
       graphService.invalidateGraph(graphUri1);
 
-      // Verify only the invalidated one is removed
-      const allGraphs = graphService.resolveVaultUri('vault://');
-      expect(allGraphs).not.toContain(graphUri1);
-      expect(allGraphs).toContain(graphUri2);
+      // When we load the graphs again, only the invalidated one should be re-read
+      const initialReadCalls = (mockApp.vault.read as any).mock.calls.length;
+
+      // Setup for the re-read of the invalidated graph
+      (mockApp.vault.getAbstractFileByPath as any).mockReturnValue(new MockTFile('test1.md'));
+      (mockApp.vault.read as any).mockResolvedValue('test content 1');
+
+      // Load both graphs again - only test1.md should cause a file read
+      await graphService.getGraphs([graphUri1, graphUri2]);
+
+      // Should have one additional read call (for the invalidated graph only)
+      expect((mockApp.vault.read as any).mock.calls.length).toBe(initialReadCalls + 1);
     });
 
     it('should cause subsequent getGraphs to reload', async () => {
@@ -399,7 +441,7 @@ describe('GraphService', () => {
         (mockApp.vault.getAbstractFileByPath as any).mockReturnValue(null);
 
         await expect(graphService.getGraphs([graphUri])).rejects.toThrow(
-          'Failed to load graph: vault://invalid.md'
+          'Failed to load any graphs'
         );
 
         expect(consoleSpy.error).toHaveBeenCalledWith(
@@ -411,7 +453,7 @@ describe('GraphService', () => {
         const graphUri = 'invalid-uri';
 
         await expect(graphService.getGraphs([graphUri])).rejects.toThrow(
-          'Failed to load graph: invalid-uri'
+          'Failed to load any graphs'
         );
 
         expect(consoleSpy.error).toHaveBeenCalledWith(
@@ -436,7 +478,7 @@ describe('GraphService', () => {
         (mockApp.vault.read as any).mockResolvedValue('invalid turtle');
 
         await expect(graphService.getGraphs([graphUri])).rejects.toThrow(
-          'Failed to load graph: vault://invalid-turtle.md'
+          'Failed to load any graphs'
         );
 
         expect(consoleSpy.error).toHaveBeenCalledWith(
@@ -452,7 +494,7 @@ describe('GraphService', () => {
         (mockApp.vault.read as any).mockRejectedValue(new Error('Permission denied'));
 
         await expect(graphService.getGraphs([graphUri])).rejects.toThrow(
-          'Failed to load graph: vault://unreadable.md'
+          'Failed to load any graphs'
         );
 
         expect(consoleSpy.error).toHaveBeenCalledWith(
@@ -472,9 +514,10 @@ describe('GraphService', () => {
           .mockReturnValueOnce(null); // File not found
         (mockApp.vault.read as any).mockResolvedValue('valid content');
 
-        await expect(graphService.getGraphs([validUri, invalidUri])).rejects.toThrow(
-          'Failed to load graph: vault://invalid.md'
-        );
+        // Should succeed with partial results and log warnings
+        const result = await graphService.getGraphs([validUri, invalidUri]);
+        expect(result).toHaveLength(1);
+        expect(result[0].uri).toBe(validUri);
       });
     });
   });

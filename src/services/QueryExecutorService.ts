@@ -87,6 +87,15 @@ export class QueryExecutorService {
       const targetGraphs = this.determineTargetGraphs(query);
       executionInfo.usedGraphs = targetGraphs;
 
+      console.log('QueryExecutor: Target graphs determined:', targetGraphs);
+      console.log(
+        'QueryExecutor: FROM graphs in context:',
+        query.context.fromGraphs
+      );
+      console.log(
+        'QueryExecutor: FROM NAMED graphs in context:',
+        query.context.fromNamedGraphs
+      );
 
       if (targetGraphs.length === 0) {
         return this.createErrorResult(
@@ -99,48 +108,70 @@ export class QueryExecutorService {
 
       // Load target graphs using simplified API
       const graphs = await this.graphService.getGraphs(targetGraphs);
+      console.log(
+        'QueryExecutor: Loaded graphs:',
+        graphs.map(g => ({ uri: g.uri, tripleCount: g.tripleCount }))
+      );
 
-      // Create dataset store according to SPARQL semantics
-      const datasetStore = new Store();
-
+      // Create a single store with named graphs
+      const combinedStore = new Store();
       const fromGraphs = query.context.fromGraphs || [];
       const fromNamedGraphs = query.context.fromNamedGraphs || [];
+      const allFromGraphs = [...fromGraphs, ...fromNamedGraphs];
 
-      if (fromGraphs.length > 0) {
-        // FROM clauses: merge specified graphs into the default graph
-        for (const graph of graphs) {
-          if (fromGraphs.includes(graph.uri)) {
+      // Create a map of graph URI to graph for efficient lookup
+      const graphMap = new Map<string, (typeof graphs)[0]>();
+      for (const graph of graphs) {
+        graphMap.set(graph.uri, graph);
+      }
+
+      if (allFromGraphs.length > 0) {
+        // FROM and FROM NAMED: load all with named graph identifiers
+        for (const graphUri of allFromGraphs) {
+          const graph = graphMap.get(graphUri);
+          if (graph) {
             const quads = graph.store.getQuads(null, null, null, null);
-            datasetStore.addQuads(quads); // Add to default graph
+            const namedGraphNode = DataFactory.namedNode(graphUri);
+            for (const quad of quads) {
+              combinedStore.addQuad(
+                quad.subject,
+                quad.predicate,
+                quad.object,
+                namedGraphNode
+              );
+            }
           }
         }
-      } else if (fromNamedGraphs.length === 0) {
-        // No FROM or FROM NAMED: use current file's graph as default
+      } else {
+        // No FROM clauses: use current file's graph with its URI as named graph
         for (const graph of graphs) {
           const quads = graph.store.getQuads(null, null, null, null);
-          datasetStore.addQuads(quads); // Add to default graph
-        }
-      }
-
-      // FROM NAMED clauses: add as named graphs
-      if (fromNamedGraphs.length > 0) {
-        for (const graph of graphs) {
-          if (fromNamedGraphs.includes(graph.uri)) {
-            const quads = graph.store.getQuads(null, null, null, null);
-            const namedQuads = quads.map(quad =>
-              DataFactory.quad(quad.subject, quad.predicate, quad.object, DataFactory.namedNode(graph.uri))
+          const namedGraphNode = DataFactory.namedNode(graph.uri);
+          for (const quad of quads) {
+            combinedStore.addQuad(
+              quad.subject,
+              quad.predicate,
+              quad.object,
+              namedGraphNode
             );
-            datasetStore.addQuads(namedQuads);
           }
         }
       }
 
-      executionInfo.totalTriples = datasetStore.size;
+      // Calculate total triples in the combined store
+      executionInfo.totalTriples = combinedStore.size;
 
-      // Execute the query
-      const result = await this.executeQueryWithStore(
+      console.log(
+        'QueryExecutor: Created combined store with',
+        combinedStore.size,
+        'triples'
+      );
+      console.log('QueryExecutor: All FROM graphs:', allFromGraphs);
+
+      // Execute the query with single combined store
+      const result = await this.executeQueryWithSources(
         query,
-        datasetStore,
+        combinedStore,
         options,
         abortController.signal
       );
@@ -212,9 +243,9 @@ export class QueryExecutorService {
   }
 
   /**
-   * Execute query with a specific N3 store
+   * Execute query with single store containing named graphs (the correct RDF approach)
    */
-  private async executeQueryWithStore(
+  private async executeQueryWithSources(
     query: SparqlQuery,
     store: Store,
     options: QueryExecutionOptions,
@@ -222,6 +253,10 @@ export class QueryExecutorService {
   ): Promise<QueryResults> {
     if (!query.parsedQuery) {
       throw new Error('Query must be parsed before execution');
+    }
+
+    if (store.size === 0) {
+      throw new Error('No data available for query execution');
     }
 
     // Extract query type from parsed query - sparqljs uses queryType property
@@ -233,8 +268,9 @@ export class QueryExecutorService {
       parsedQuery.queryType || parsedQuery.type
     )?.toUpperCase() as QueryResultsType;
 
-    // Create context for Comunica following their documentation example
-    const context: { sources: Store[] } = {
+    // Create context for Comunica with single store as source
+    // For N3 Store, we should use the store directly as the source
+    const context = {
       sources: [store],
     };
 
@@ -288,8 +324,17 @@ export class QueryExecutorService {
     options: QueryExecutionOptions,
     abortSignal: AbortSignal
   ): Promise<QueryResults> {
+    // Ensure we have sources available
+    if (!context.sources || context.sources.length === 0) {
+      throw new Error('No sources available for query execution');
+    }
 
-    // Following Comunica documentation example: pass Store directly in sources array
+    console.log(
+      'QueryExecutor: About to execute SELECT query with store size:',
+      context.sources[0].size
+    );
+    console.log('QueryExecutor: Query string:', query.queryString);
+
     const bindingsStream = await this.engine.queryBindings(query.queryString, {
       sources: context.sources as [Store, ...Store[]],
       signal: abortSignal,
@@ -324,11 +369,17 @@ export class QueryExecutorService {
 
         // Process the binding using our helper
         const bindingObj = BindingHelpers.processBinding(binding);
+        console.log('QueryExecutor: Found binding:', bindingObj);
         bindings.push(bindingObj);
         count++;
       });
 
       bindingsStream.on('end', () => {
+        console.log(
+          'QueryExecutor: SELECT query completed with',
+          bindings.length,
+          'results'
+        );
         resolve({
           status: 'completed',
           queryType: 'SELECT',

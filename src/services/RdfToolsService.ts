@@ -377,6 +377,7 @@ export class RdfToolsService extends Component {
     }
 
     if (removedCount > 0 && this.settings.enableDebugLogging) {
+      // Debug logging would go here if needed
     }
   }
 
@@ -431,38 +432,54 @@ export class RdfToolsService extends Component {
 
       // Debug: Show which queries will be re-executed
       dependentQueries.forEach((queryInfo, i) => {
-        console.log(`  Query ${i + 1}: in file ${queryInfo.file.path}, depends on:`, queryInfo.dependentGraphs);
+        console.log(
+          `  Query ${i + 1}: in file ${queryInfo.file.path}, depends on:`,
+          queryInfo.dependentGraphs
+        );
       });
     }
 
     // 3. Re-execute dependent queries in parallel for better performance
     if (dependentQueries.length > 0) {
-      const filteredQueries = dependentQueries.filter(queryInfo => !queryInfo.isExecuting);
+      const filteredQueries = dependentQueries.filter(
+        queryInfo => !queryInfo.isExecuting
+      );
 
       if (this.settings.enableDebugLogging) {
         if (this.settings.enableDebugLogging) {
-          console.log(`RDF Tools: Re-executing ${filteredQueries.length} queries (${dependentQueries.length - filteredQueries.length} already executing)`);
+          console.log(
+            `RDF Tools: Re-executing ${filteredQueries.length} queries (${dependentQueries.length - filteredQueries.length} already executing)`
+          );
         }
       }
 
       if (filteredQueries.length > 0) {
-        const reExecutionPromises = filteredQueries.map(async (queryInfo, index) => {
-          try {
-            if (this.settings.enableDebugLogging) {
+        const reExecutionPromises = filteredQueries.map(
+          async (queryInfo, index) => {
+            try {
               if (this.settings.enableDebugLogging) {
-                console.log(`RDF Tools: Starting re-execution ${index + 1}/${filteredQueries.length} for ${queryInfo.file.path}`);
+                if (this.settings.enableDebugLogging) {
+                  console.log(
+                    `RDF Tools: Starting re-execution ${index + 1}/${filteredQueries.length} for ${queryInfo.file.path}`
+                  );
+                }
               }
-            }
-            await this.reExecuteSparqlQuery(queryInfo);
-            if (this.settings.enableDebugLogging) {
+              await this.reExecuteSparqlQuery(queryInfo);
               if (this.settings.enableDebugLogging) {
-                console.log(`RDF Tools: Completed re-execution ${index + 1}/${filteredQueries.length} for ${queryInfo.file.path}`);
+                if (this.settings.enableDebugLogging) {
+                  console.log(
+                    `RDF Tools: Completed re-execution ${index + 1}/${filteredQueries.length} for ${queryInfo.file.path}`
+                  );
+                }
               }
+            } catch (error) {
+              console.error(
+                `RDF Tools: Error re-executing query ${index + 1} in ${queryInfo.file.path}:`,
+                error
+              );
             }
-          } catch (error) {
-            console.error(`RDF Tools: Error re-executing query ${index + 1} in ${queryInfo.file.path}:`, error);
           }
-        });
+        );
 
         // Execute with timeout to prevent hanging
         const timeoutPromise = new Promise<void>((_, reject) => {
@@ -493,7 +510,10 @@ export class RdfToolsService extends Component {
   /**
    * Find the SPARQL container for a query after DOM regeneration
    */
-  private findSparqlContainerInFile(file: TFile, targetQuery: SparqlQuery): HTMLElement | null {
+  private findSparqlContainerInFile(
+    file: TFile,
+    targetQuery: SparqlQuery
+  ): HTMLElement | null {
     try {
       // Get all markdown views for this file
       const leaves = this.app.workspace.getLeavesOfType('markdown');
@@ -513,9 +533,12 @@ export class RdfToolsService extends Component {
       }
 
       // Find all SPARQL code blocks in this view
-      const sparqlBlocks = Array.from(viewContainer.querySelectorAll('[data-lang="sparql"]'));
+      const sparqlBlocks = Array.from(
+        viewContainer.querySelectorAll('[data-lang="sparql"]')
+      );
 
       if (this.settings.enableDebugLogging) {
+        // Debug logging for SPARQL blocks found
       }
 
       for (const block of sparqlBlocks) {
@@ -528,6 +551,7 @@ export class RdfToolsService extends Component {
           // If the query text matches, look for the result container
           if (blockQueryText === targetQueryText) {
             if (this.settings.enableDebugLogging) {
+              // Debug logging for query match found
             }
             // Look for the result container that should be after this code block
             let resultContainer = block.nextElementSibling;
@@ -542,7 +566,10 @@ export class RdfToolsService extends Component {
             let parent = block.parentElement;
             while (parent && parent !== viewContainer) {
               const nextSibling = parent.nextElementSibling;
-              if (nextSibling && nextSibling.classList.contains('rdf-sparql-result')) {
+              if (
+                nextSibling &&
+                nextSibling.classList.contains('rdf-sparql-result')
+              ) {
                 return nextSibling as HTMLElement;
               }
               parent = parent.parentElement;
@@ -554,7 +581,10 @@ export class RdfToolsService extends Component {
       return null;
     } catch (error) {
       if (this.settings.enableDebugLogging) {
-        console.error(`RDF Tools: Error finding SPARQL container in ${file.path}:`, error);
+        console.error(
+          `RDF Tools: Error finding SPARQL container in ${file.path}:`,
+          error
+        );
       }
       return null;
     }
@@ -568,7 +598,9 @@ export class RdfToolsService extends Component {
   ): Promise<void> {
     if (this.settings.enableDebugLogging) {
       if (this.settings.enableDebugLogging) {
-        console.log(`RDF Tools: reExecuteSparqlQuery called for ${queryInfo.file.path}, query ID: ${queryInfo.id}`);
+        console.log(
+          `RDF Tools: reExecuteSparqlQuery called for ${queryInfo.file.path}, query ID: ${queryInfo.id}`
+        );
       }
     }
 
@@ -576,17 +608,23 @@ export class RdfToolsService extends Component {
       // Check if the container still exists in the DOM
       if (!document.body.contains(queryInfo.container)) {
         if (this.settings.enableDebugLogging) {
+          // Debug logging for container not in DOM
         }
 
         // Try to find the container by looking for SPARQL code blocks in the current file
-        const updatedContainer = this.findSparqlContainerInFile(queryInfo.file, queryInfo.query);
+        const updatedContainer = this.findSparqlContainerInFile(
+          queryInfo.file,
+          queryInfo.query
+        );
         if (updatedContainer) {
           if (this.settings.enableDebugLogging) {
+            // Debug logging for container updated
           }
           // Update the container reference
           queryInfo.container = updatedContainer;
         } else {
           if (this.settings.enableDebugLogging) {
+            // Debug logging for container not found
           }
           // Container no longer exists, unregister the query
           this.sparqlQueryTracker.unregisterQuery(queryInfo.id);
@@ -639,9 +677,11 @@ export class RdfToolsService extends Component {
 
       // Execute the query
       if (this.settings.enableDebugLogging) {
+        // Debug logging for query execution start
       }
       const results = await this.queryExecutor.executeQuery(queryInfo.query);
       if (this.settings.enableDebugLogging) {
+        // Debug logging for query execution complete
       }
 
       // Update display with results

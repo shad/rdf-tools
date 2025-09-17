@@ -1,4 +1,4 @@
-import { Store, DataFactory } from 'n3';
+import { Store } from 'n3';
 import { TFile, App } from 'obsidian';
 import { Graph } from '../models/Graph';
 import { MarkdownGraphParser } from './MarkdownGraphParser';
@@ -20,25 +20,44 @@ export class GraphService {
    */
   async getGraphs(graphUris: string[]): Promise<Graph[]> {
     const graphs: Graph[] = [];
+    const loadingErrors: string[] = [];
 
     for (const graphUri of graphUris) {
-      // Check cache first
-      let graph = this.cache.get(graphUri);
+      try {
+        // Check cache first
+        let graph = this.cache.get(graphUri);
 
-      if (!graph) {
-        // Load lazily if not cached
-        const loadedGraph = await this.loadGraph(graphUri);
-        if (loadedGraph) {
-          this.cache.set(graphUri, loadedGraph);
-          graph = loadedGraph;
+        if (!graph) {
+          // Load lazily if not cached
+          const loadedGraph = await this.loadGraph(graphUri);
+          if (loadedGraph) {
+            this.cache.set(graphUri, loadedGraph);
+            graph = loadedGraph;
+          }
         }
-      }
 
-      if (graph) {
-        graphs.push(graph);
-      } else {
-        throw new Error(`Failed to load graph: ${graphUri}`);
+        if (graph) {
+          graphs.push(graph);
+        } else {
+          loadingErrors.push(`Graph not found or failed to load: ${graphUri}`);
+        }
+      } catch (error) {
+        const errorMsg =
+          error instanceof Error ? error.message : 'Unknown error';
+        loadingErrors.push(`Error loading graph ${graphUri}: ${errorMsg}`);
       }
+    }
+
+    // If no graphs were loaded successfully, throw an error
+    if (graphs.length === 0 && graphUris.length > 0) {
+      throw new Error(
+        `Failed to load any graphs. Errors: ${loadingErrors.join('; ')}`
+      );
+    }
+
+    // If some graphs failed to load, log warnings but continue
+    if (loadingErrors.length > 0) {
+      console.warn('Some graphs failed to load:', loadingErrors);
     }
 
     return graphs;
@@ -70,21 +89,71 @@ export class GraphService {
     const path = vaultUri.replace('vault://', '');
 
     if (path === '') {
-      // vault:// - all cached graphs (simplified)
-      return Array.from(this.cache.keys());
+      // vault:// - all files in the vault
+      return this.getAllVaultFileGraphUris();
     }
 
     if (path.endsWith('/')) {
-      // vault://directory/ - all graphs in directory
+      // vault://directory/ - all files in directory (recursively)
       const dirPath = path.slice(0, -1);
-      return Array.from(this.cache.keys()).filter(uri => {
-        const graph = this.cache.get(uri);
-        return graph && graph.filePath.startsWith(dirPath);
-      });
+      return this.getDirectoryGraphUris(dirPath);
     }
 
     // vault://specific/file.md - specific graph
     return [vaultUri];
+  }
+
+  /**
+   * Get all graph URIs for files in the vault
+   */
+  private getAllVaultFileGraphUris(): string[] {
+    const graphUris: string[] = [];
+    const allFiles = this.app.vault.getMarkdownFiles();
+
+    for (const file of allFiles) {
+      const graphUri = this.getGraphUriForFile(file.path);
+      graphUris.push(graphUri);
+    }
+
+    // Also include .ttl files
+    const allTtlFiles = this.app.vault
+      .getFiles()
+      .filter(f => f.extension === 'ttl');
+    for (const file of allTtlFiles) {
+      const graphUri = this.getGraphUriForFile(file.path);
+      graphUris.push(graphUri);
+    }
+
+    return graphUris;
+  }
+
+  /**
+   * Get graph URIs for all files in a directory (recursively)
+   */
+  private getDirectoryGraphUris(dirPath: string): string[] {
+    const graphUris: string[] = [];
+
+    // Get all markdown files in the directory
+    const allFiles = this.app.vault.getMarkdownFiles();
+    for (const file of allFiles) {
+      if (file.path.startsWith(dirPath + '/') || file.path === dirPath) {
+        const graphUri = this.getGraphUriForFile(file.path);
+        graphUris.push(graphUri);
+      }
+    }
+
+    // Also include .ttl files in the directory
+    const allTtlFiles = this.app.vault
+      .getFiles()
+      .filter(f => f.extension === 'ttl');
+    for (const file of allTtlFiles) {
+      if (file.path.startsWith(dirPath + '/') || file.path === dirPath) {
+        const graphUri = this.getGraphUriForFile(file.path);
+        graphUris.push(graphUri);
+      }
+    }
+
+    return graphUris;
   }
 
   /**
