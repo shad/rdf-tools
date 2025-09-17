@@ -143,17 +143,12 @@ export class QueryExecutorService {
           }
         }
       } else {
-        // No FROM clauses: use current file's graph with its URI as named graph
+        // No FROM clauses: use current file's graph as the default graph
         for (const graph of graphs) {
           const quads = graph.store.getQuads(null, null, null, null);
-          const namedGraphNode = DataFactory.namedNode(graph.uri);
           for (const quad of quads) {
-            combinedStore.addQuad(
-              quad.subject,
-              quad.predicate,
-              quad.object,
-              namedGraphNode
-            );
+            // Add to default graph by omitting the 4th parameter (graph identifier)
+            combinedStore.addQuad(quad.subject, quad.predicate, quad.object);
           }
         }
       }
