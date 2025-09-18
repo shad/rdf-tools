@@ -82,13 +82,7 @@ export class CodeBlockProcessor extends Component {
    * Register Obsidian markdown post-processor to find and enhance existing code blocks
    */
   register(): void {
-    // Register post-processor that runs after native markdown rendering
-    this.plugin.registerMarkdownPostProcessor((el, ctx) => {
-      this.processMarkdownContent(el, ctx);
-    });
-
-    // ALSO register direct code block processors as a fallback test
-
+    // Register direct code block processor for SPARQL blocks
     this.plugin.registerMarkdownCodeBlockProcessor(
       'sparql',
       async (source, el, ctx) => {
@@ -198,124 +192,6 @@ export class CodeBlockProcessor extends Component {
 
         console.error('Could not find SPARQL block in file content');
       });
-  }
-
-  /**
-   * Process rendered markdown content to find and enhance code blocks
-   */
-  private async processMarkdownContent(
-    el: HTMLElement,
-    ctx: MarkdownPostProcessorContext
-  ): Promise<void> {
-    // Find turtle code blocks
-    const turtleBlocks = Array.from(
-      el.querySelectorAll('pre > code.language-turtle')
-    );
-
-    for (const codeEl of turtleBlocks) {
-      const source = codeEl.textContent || '';
-      const preEl = codeEl.parentElement as HTMLElement;
-      await this.processTurtleBlock(source, preEl, ctx);
-    }
-
-    // Find SPARQL code blocks
-    const sparqlBlocks = Array.from(
-      el.querySelectorAll('pre > code.language-sparql')
-    );
-
-    for (const codeEl of sparqlBlocks) {
-      const source = codeEl.textContent || '';
-      const preEl = codeEl.parentElement as HTMLElement;
-      await this.processSparqlBlock(source, preEl, ctx);
-    }
-  }
-
-  /**
-   * Process a turtle code block
-   */
-  private async processTurtleBlock(
-    source: string,
-    preEl: HTMLElement,
-    ctx: MarkdownPostProcessorContext
-  ): Promise<void> {
-    // Check if we've already processed this block
-    if (
-      preEl.nextElementSibling?.classList.contains(
-        'rdf-turtle-results-container'
-      )
-    ) {
-      return;
-    }
-
-    // Create a container for our results after the native code block
-    const container = preEl.ownerDocument.createElement('div');
-    container.classList.add('rdf-turtle-results-container');
-
-    // Create placeholder for parse results
-    const resultEl = container.appendChild(
-      preEl.ownerDocument.createElement('div')
-    );
-    resultEl.classList.add('rdf-turtle-result');
-
-    // Add data attributes for later processing
-    container.setAttribute('data-turtle-content', source);
-    container.setAttribute('data-file-path', ctx.sourcePath);
-
-    // Insert after the pre element
-    preEl.parentNode?.insertBefore(container, preEl.nextSibling);
-
-    // Call the callback if set
-    if (this.turtleCallback) {
-      try {
-        await this.turtleCallback(source, container, ctx);
-      } catch (error) {
-        console.error('Error in turtle block callback:', error);
-      }
-    }
-  }
-
-  /**
-   * Process a SPARQL code block
-   */
-  private async processSparqlBlock(
-    source: string,
-    preEl: HTMLElement,
-    ctx: MarkdownPostProcessorContext
-  ): Promise<void> {
-    // Check if we've already processed this block
-    if (
-      preEl.nextElementSibling?.classList.contains(
-        'rdf-sparql-results-container'
-      )
-    ) {
-      return;
-    }
-
-    // Create a container for our results after the native code block
-    const container = preEl.ownerDocument.createElement('div');
-    container.classList.add('rdf-sparql-results-container');
-
-    // Create placeholder for parse/execution results
-    const resultEl = container.appendChild(
-      preEl.ownerDocument.createElement('div')
-    );
-    resultEl.classList.add('rdf-sparql-result');
-
-    // Add data attributes for later processing
-    container.setAttribute('data-sparql-content', source);
-    container.setAttribute('data-file-path', ctx.sourcePath);
-
-    // Insert after the pre element
-    preEl.parentNode?.insertBefore(container, preEl.nextSibling);
-
-    // Call the callback if set
-    if (this.sparqlCallback) {
-      try {
-        await this.sparqlCallback(source, container, ctx);
-      } catch (error) {
-        console.error('Error in SPARQL block callback:', error);
-      }
-    }
   }
 
   /**
