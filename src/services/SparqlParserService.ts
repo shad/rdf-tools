@@ -149,12 +149,6 @@ export class SparqlParserService {
       };
       const queryType = queryWithType.queryType || parsedQuery.type;
 
-      console.log(
-        'SPARQL Parser: Using query type:',
-        queryType,
-        'From queryType property:',
-        queryWithType.queryType
-      );
       const prefixes = parsedQuery.prefixes || {};
 
       let fromGraphs: string[] = [];

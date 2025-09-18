@@ -1,7 +1,7 @@
 {
 	"name": "obsidian-rdf-tools",
 	"version": "1.0.0",
-	"description": "RDF Tools for Obsidian - Work with RDF data and SPARQL queries directly in your vault",
+	"description": "Work with RDF data and SPARQL queries directly in your vault. Extract turtle code blocks as knowledge graphs and query them with live-updating SPARQL results.",
 	"type": "module",
 	"main": "main.js",
 	"scripts": {
@@ -20,9 +20,14 @@
 		"test:watch": "vitest --watch",
 		"check-all": "npm run format && npm run lint:fix && npm run typecheck && npm run test:run"
 	},
-	"keywords": [],
-	"author": "shad",
+	"keywords": ["obsidian", "rdf", "sparql", "semantic-web", "knowledge-graph", "turtle"],
+	"author": "Shad Reynolds",
 	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/shad/rdf-tools.git"
+	},
+	"homepage": "https://github.com/shad/rdf-tools#readme",
 	"engines": {
 		"node": ">=18.0.0"
 	},

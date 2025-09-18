@@ -87,16 +87,6 @@ export class QueryExecutorService {
       const targetGraphs = this.determineTargetGraphs(query);
       executionInfo.usedGraphs = targetGraphs;
 
-      console.log('QueryExecutor: Target graphs determined:', targetGraphs);
-      console.log(
-        'QueryExecutor: FROM graphs in context:',
-        query.context.fromGraphs
-      );
-      console.log(
-        'QueryExecutor: FROM NAMED graphs in context:',
-        query.context.fromNamedGraphs
-      );
-
       if (targetGraphs.length === 0) {
         return this.createErrorResult(
           query,
@@ -108,10 +98,6 @@ export class QueryExecutorService {
 
       // Load target graphs using simplified API
       const graphs = await this.graphService.getGraphs(targetGraphs);
-      console.log(
-        'QueryExecutor: Loaded graphs:',
-        graphs.map(g => ({ uri: g.uri, tripleCount: g.tripleCount }))
-      );
 
       // Create a single store with named graphs
       const combinedStore = new Store();
@@ -155,13 +141,6 @@ export class QueryExecutorService {
 
       // Calculate total triples in the combined store
       executionInfo.totalTriples = combinedStore.size;
-
-      console.log(
-        'QueryExecutor: Created combined store with',
-        combinedStore.size,
-        'triples'
-      );
-      console.log('QueryExecutor: All FROM graphs:', allFromGraphs);
 
       // Execute the query with single combined store
       const result = await this.executeQueryWithSources(
@@ -324,12 +303,6 @@ export class QueryExecutorService {
       throw new Error('No sources available for query execution');
     }
 
-    console.log(
-      'QueryExecutor: About to execute SELECT query with store size:',
-      context.sources[0].size
-    );
-    console.log('QueryExecutor: Query string:', query.queryString);
-
     const bindingsStream = await this.engine.queryBindings(query.queryString, {
       sources: context.sources as [Store, ...Store[]],
       signal: abortSignal,
@@ -364,17 +337,11 @@ export class QueryExecutorService {
 
         // Process the binding using our helper
         const bindingObj = BindingHelpers.processBinding(binding);
-        console.log('QueryExecutor: Found binding:', bindingObj);
         bindings.push(bindingObj);
         count++;
       });
 
       bindingsStream.on('end', () => {
-        console.log(
-          'QueryExecutor: SELECT query completed with',
-          bindings.length,
-          'results'
-        );
         resolve({
           status: 'completed',
           queryType: 'SELECT',

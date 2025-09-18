@@ -78,10 +78,6 @@ export class RdfToolsService extends Component {
     // Set up workspace integration for query tracking
     this.setupWorkspaceIntegration();
 
-    console.log(
-      'RdfToolsService initialized - callbacks set up and processors registered'
-    );
-
     if (this.settings.enableDebugLogging) {
       console.log('RdfToolsService: Debug logging enabled');
     }

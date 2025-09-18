@@ -11,11 +11,11 @@ RDF Tools is architected as a layered system that bridges Obsidian's file-based 
 **Purpose**: Interface between the plugin and Obsidian's APIs
 
 **Components**:
-- `RDFToolsPlugin` - Main plugin class handling lifecycle and coordination
-- `FileMonitor` - Watches for file changes and triggers processing
-- `MarkdownPostProcessor` - Renders SPARQL query results in place of code blocks
-- `SettingsTab` - User configuration interface
-- `StatusBarManager` - User feedback and system status
+- `RdfToolsPlugin` - Main plugin class handling lifecycle and coordination
+- `RdfToolsService` - Central orchestrating service that coordinates RDF processing
+- `CodeBlockProcessor` - Renders SPARQL query results in place of code blocks
+- `RdfToolsSettingsTab` - User configuration interface
+- `SparqlQueryDetailsModal` - Modal for detailed query analysis
 
 **Responsibilities**:
 - Plugin lifecycle management (load/unload)
@@ -29,11 +29,10 @@ RDF Tools is architected as a layered system that bridges Obsidian's file-based 
 **Purpose**: Core business logic and orchestration
 
 **Components**:
-- `GraphManager` - Coordinates graph operations and lifecycle
-- `QueryExecutor` - Manages SPARQL query execution and result formatting
-- `DependencyTracker` - Tracks relationships between queries and data
-- `ChangeProcessor` - Handles incremental updates and change propagation
-- `ErrorHandler` - Centralized error management and user feedback
+- `RdfToolsService` - Central orchestrating service that coordinates all RDF processing
+- `MarkdownErrorReporter` - Handles error reporting in markdown files
+- `CodeBlockExtractorService` - Extracts code blocks from markdown content
+- `MarkdownGraphParser` - Parses markdown files to extract turtle blocks
 
 **Responsibilities**:
 - Business logic coordination
@@ -67,15 +66,15 @@ RDF Tools is architected as a layered system that bridges Obsidian's file-based 
 **Purpose**: Storage, caching, and persistence
 
 **Components**:
-- `CacheService` - Multi-level caching strategy
-- `StorageService` - Persistent data storage
-- `IndexService` - Search and retrieval optimization
+- `GraphService` - In-memory graph storage with lazy loading and caching
+- `N3 Store` - Triple storage using the N3.js library
+- `File System Integration` - Direct integration with Obsidian's file system
 
 **Responsibilities**:
-- Query result caching
-- Graph persistence for large datasets
-- Performance optimization through indexing
-- Memory management
+- In-memory triple storage and retrieval
+- Lazy loading of graphs from files
+- Graph caching and invalidation
+- File-to-graph URI mapping
 
 ## Core Data Flow
 
@@ -131,25 +130,34 @@ SPARQL Code Block
 
 ```
 RdfToolsService
-    ├── GraphService
-    ├── QueryExecutorService
-    ├── SparqlQueryTracker
+    ├── CodeBlockExtractorService
     ├── TurtleParserService
     ├── SparqlParserService
-    └── PrefixService
+    ├── GraphService
+    ├── QueryExecutorService
+    ├── PrefixService
+    ├── SparqlQueryTracker
+    ├── CodeBlockProcessor
+    └── MarkdownErrorReporter
 
 QueryExecutorService
     ├── GraphService
     └── Comunica QueryEngine
 
 SparqlQueryTracker
-    ├── GraphService (for URI resolution)
-    └── SparqlQuery (for dependency analysis)
+    ├── App (for file operations)
+    └── SparqlQueryInfo (for dependency tracking)
 
 GraphService
     ├── MarkdownGraphParser
+    ├── TurtleParserService
     ├── PrefixService
     └── N3 Store
+
+CodeBlockProcessor
+    ├── App (for Obsidian integration)
+    ├── Plugin (for registering processors)
+    └── PrefixService (for URI formatting)
 ```
 
 ### Event Flow

@@ -82,31 +82,16 @@ export class CodeBlockProcessor extends Component {
    * Register Obsidian markdown post-processor to find and enhance existing code blocks
    */
   register(): void {
-    console.log('CodeBlockProcessor: Registering markdown post-processor');
-
     // Register post-processor that runs after native markdown rendering
     this.plugin.registerMarkdownPostProcessor((el, ctx) => {
-      console.log('CodeBlockProcessor: Post-processor callback triggered!', {
-        sourcePath: ctx.sourcePath,
-        elementTag: el.tagName,
-      });
       this.processMarkdownContent(el, ctx);
     });
 
-    console.log('CodeBlockProcessor: Post-processor registration complete');
-
     // ALSO register direct code block processors as a fallback test
-    console.log(
-      'CodeBlockProcessor: Also registering direct code block processors'
-    );
 
     this.plugin.registerMarkdownCodeBlockProcessor(
       'sparql',
       async (source, el, ctx) => {
-        console.log('CodeBlockProcessor: Direct SPARQL processor called!', {
-          source: source.substring(0, 50),
-        });
-
         // Hide the original code block and replace with minimal clickable area
         el.innerHTML = '';
         const container = el.ownerDocument.createElement('div');
@@ -138,9 +123,6 @@ export class CodeBlockProcessor extends Component {
 
           container.appendChild(resultsContainer);
 
-          console.log(
-            'CodeBlockProcessor: Created SPARQL container with result element'
-          );
           await this.sparqlCallback(source, resultsContainer, ctx);
         }
 
@@ -225,41 +207,14 @@ export class CodeBlockProcessor extends Component {
     el: HTMLElement,
     ctx: MarkdownPostProcessorContext
   ): Promise<void> {
-    console.log('CodeBlockProcessor: processMarkdownContent called', {
-      sourcePath: ctx.sourcePath,
-      elementTag: el.tagName,
-      elementClasses: el.className,
-      childrenCount: el.children.length,
-    });
-
-    // Debug: log all code elements found
-    const allCodeElements = Array.from(el.querySelectorAll('code'));
-    console.log(
-      `CodeBlockProcessor: Found ${allCodeElements.length} total code elements`
-    );
-    allCodeElements.forEach((code, index) => {
-      console.log(`CodeBlockProcessor: Code element ${index}:`, {
-        className: code.className,
-        textLength: code.textContent?.length || 0,
-        parentTag: code.parentElement?.tagName,
-        textPreview: (code.textContent || '').substring(0, 50),
-      });
-    });
-
     // Find turtle code blocks
     const turtleBlocks = Array.from(
       el.querySelectorAll('pre > code.language-turtle')
-    );
-    console.log(
-      `CodeBlockProcessor: Found ${turtleBlocks.length} turtle blocks`
     );
 
     for (const codeEl of turtleBlocks) {
       const source = codeEl.textContent || '';
       const preEl = codeEl.parentElement as HTMLElement;
-      console.log(
-        `CodeBlockProcessor: Processing turtle block with ${source.length} chars`
-      );
       await this.processTurtleBlock(source, preEl, ctx);
     }
 
@@ -267,16 +222,10 @@ export class CodeBlockProcessor extends Component {
     const sparqlBlocks = Array.from(
       el.querySelectorAll('pre > code.language-sparql')
     );
-    console.log(
-      `CodeBlockProcessor: Found ${sparqlBlocks.length} SPARQL blocks`
-    );
 
     for (const codeEl of sparqlBlocks) {
       const source = codeEl.textContent || '';
       const preEl = codeEl.parentElement as HTMLElement;
-      console.log(
-        `CodeBlockProcessor: Processing SPARQL block with ${source.length} chars`
-      );
       await this.processSparqlBlock(source, preEl, ctx);
     }
   }
@@ -389,9 +338,6 @@ export class CodeBlockProcessor extends Component {
 
     // Clear previous results
     resultEl.innerHTML = '';
-    console.log('CodeBlockProcessor: Rendering turtle result', {
-      success: result.success,
-    });
 
     if (result.success) {
       this.renderTurtleSuccess(resultEl, result, options);
@@ -421,10 +367,6 @@ export class CodeBlockProcessor extends Component {
 
     // Clear previous results
     resultEl.innerHTML = '';
-    console.log('CodeBlockProcessor: Rendering SPARQL result', {
-      parseSuccess: parseResult.success,
-      hasQueryResults: !!queryResults,
-    });
 
     // Show parse errors first if any
     if (!parseResult.success) {
