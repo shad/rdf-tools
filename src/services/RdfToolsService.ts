@@ -53,7 +53,11 @@ export class RdfToolsService extends Component {
     this.graphService = new GraphService(this.app, this.prefixService);
     this.queryExecutor = new QueryExecutorService(this.graphService);
     this.sparqlQueryTracker = new SparqlQueryTracker(this.graphService);
-    this.codeBlockProcessor = new CodeBlockProcessor(this.app, this.plugin);
+    this.codeBlockProcessor = new CodeBlockProcessor(
+      this.app,
+      this.plugin,
+      this
+    );
     this.errorReporter = new MarkdownErrorReporter(this.app);
   }
 
@@ -763,5 +767,12 @@ export class RdfToolsService extends Component {
    */
   getSparqlQueryTracker(): SparqlQueryTracker {
     return this.sparqlQueryTracker;
+  }
+
+  /**
+   * Get the prefix service
+   */
+  getPrefixService(): PrefixService {
+    return this.prefixService;
   }
 }

@@ -53,7 +53,6 @@
 .turtle-uri {
   font-family: var(--font-monospace);
   font-size: 0.9em;
-  word-break: break-all;
 }
 
 .turtle-term {
@@ -126,14 +125,29 @@
 /* Container styles for turtle and SPARQL blocks */
 .rdf-turtle-container,
 .rdf-sparql-container {
-  margin: 1em 0;
+  margin: 0;
 }
 
 .rdf-turtle-code,
 .rdf-sparql-code {
-  margin-bottom: 0.5em;
   border-radius: 6px;
   background-color: var(--code-background);
+  position: relative;
+  transition: background-color 0.2s ease;
+}
+
+/* SPARQL edit header */
+.rdf-sparql-edit-header {
+  font-size: 0.9em;
+  color: var(--text-muted);
+  transition: color 0.2s ease;
+  user-select: none;
+  padding-left: 0.5rem;
+  line-height: 2rem;
+}
+
+.rdf-sparql-edit-header:hover {
+  color: var(--text-accent);
 }
 
 .rdf-turtle-result,
@@ -147,25 +161,11 @@
 }
 
 /* Success states */
-.rdf-result-success {
-  background-color: var(--background-modifier-success);
-  border-left: 3px solid var(--text-success);
-  color: var(--text-success);
-}
-
-.rdf-result-success .rdf-result-icon {
-  color: var(--text-success);
-  font-weight: bold;
-  margin-right: 0.5em;
-}
-
-.rdf-result-success .rdf-result-message {
-  font-weight: 500;
-}
-
-.rdf-result-success .rdf-result-metrics {
+.rdf-result-metrics {
   opacity: 0.7;
   font-size: 0.85em;
+  line-height: 1.5rem;
+  margin-left: 0.5em;
 }
 
 /* Error states */
@@ -250,39 +250,73 @@
   margin-bottom: 0.25em;
 }
 
+/* Results table container with horizontal scroll */
+.rdf-results-table-container {
+  overflow-x: auto;
+  border: 1px solid var(--background-modifier-border);
+}
+
 /* Results table */
 .rdf-results-table {
   width: 100%;
-  margin-top: 0.5em;
   border-collapse: collapse;
-  font-size: 0.9em;
+  font-size: 0.8em !important;
+  font-family: var(--font-monospace) !important;
+  min-width: 100%;
 }
 
 .rdf-results-table th,
 .rdf-results-table td {
-  padding: 0.5em 0.75em;
+  padding: 0.4em 0.6em;
   text-align: left;
   border-bottom: 1px solid var(--background-modifier-border);
+  white-space: pre !important;
+  word-break: keep-all !important;
+  word-wrap: normal !important;
 }
 
 .rdf-results-table th {
-  background-color: var(--background-secondary);
   font-weight: 600;
   color: var(--text-normal);
+  position: sticky;
+  top: 0;
+  z-index: 1;
 }
 
 .rdf-results-table td {
   color: var(--text-normal);
-  word-break: break-word;
+  font-family: var(--font-monospace) !important;
 }
 
 .rdf-results-table td.rdf-uri {
   color: var(--text-accent);
-  font-family: var(--font-monospace);
+}
+
+.rdf-results-table td.rdf-curie {
+  color: var(--text-accent);
+  font-weight: 500;
+}
+
+.rdf-results-table td.rdf-literal {
+  color: var(--text-normal);
+}
+
+.rdf-results-table td.rdf-bnode {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* Alternating row stripes */
+.rdf-results-table tr:nth-child(even) td {
+  background-color: var(--background-primary-alt);
+}
+
+.rdf-results-table tr:nth-child(odd) td {
+  background-color: var(--background-primary);
 }
 
 .rdf-results-table tr:hover td {
-  background-color: var(--background-modifier-hover);
+  background-color: var(--background-modifier-hover) !important;
 }
 
 /* Construct results */
@@ -331,13 +365,6 @@
   font-size: 0.85em;
   text-align: center;
   border-radius: 6px;
-}
-
-/* Metrics display */
-.rdf-result-metrics {
-  margin-left: 0.5em;
-  font-size: 0.85em;
-  opacity: 0.7;
 }
 
 /* Ensure result containers are visible */

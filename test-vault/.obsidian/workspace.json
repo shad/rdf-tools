@@ -170,7 +170,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 499.5
+    "width": 613.5
   },
   "left-ribbon": {
     "hiddenItems": {
@@ -183,9 +183,9 @@
       "bases:Create new base": false
     }
   },
-  "active": "9cd4d9c3cad6c7d4",
+  "active": "b98252733fb73756",
   "lastOpenFiles": [
-    "hellboy-queries.md",
-    "hellboy-universe.md"
+    "hellboy-universe.md",
+    "hellboy-queries.md"
   ]
 }

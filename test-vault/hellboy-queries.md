@@ -1,3 +1,4 @@
+
 ```sparql
 PREFIX : <vault://hellboy-universe.md/>
 PREFIX foaf: <http://xmlns.com/foaf/0.1/>
@@ -14,4 +15,14 @@ WHERE {
 }
 ```
 
+
+```sparql
+# @view table
+select *
+FROM <vault://hellboy-universe.md>
+WHERE {
+  ?s ?p ?o .
+}
+LIMIT 5
+```
 

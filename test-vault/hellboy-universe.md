@@ -10,7 +10,7 @@ The Hellboy universe, created by Mike Mignola, is a dark fantasy comic series fe
 @prefix org: <http://www.w3.org/ns/org#> .
 @prefix rel: <http://purl.org/vocab/relationship/> .
 
-# Organizations
+# Organizations 
 :BPRD a org:Organization ;
     foaf:name "Bureau for Paranormal Research and Defense" ;
     org:purpose "Defending humanity against supernatural threats" .

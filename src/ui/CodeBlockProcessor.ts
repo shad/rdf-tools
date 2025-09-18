@@ -1,4 +1,11 @@
-import { App, Component, MarkdownPostProcessorContext, Plugin } from 'obsidian';
+import {
+  App,
+  Component,
+  MarkdownPostProcessorContext,
+  Plugin,
+  TFile,
+  MarkdownView,
+} from 'obsidian';
 import {
   TurtleParseResult,
   TurtleParseError,
@@ -8,6 +15,7 @@ import {
   SparqlParseError,
 } from '../services/SparqlParserService';
 import { QueryResults } from '../models/QueryResults';
+import type { PrefixService } from '../services/PrefixService';
 
 /**
  * Options for rendering code block results
@@ -50,7 +58,8 @@ export class CodeBlockProcessor extends Component {
 
   constructor(
     private app: App,
-    private plugin: Plugin
+    private plugin: Plugin,
+    private rdfService?: { getPrefixService(): PrefixService }
   ) {
     super();
   }
@@ -98,35 +107,115 @@ export class CodeBlockProcessor extends Component {
           source: source.substring(0, 50),
         });
 
-        // Restore the original code block (since registerMarkdownCodeBlockProcessor replaces it)
+        // Hide the original code block and replace with minimal clickable area
         el.innerHTML = '';
-        const preEl = el.ownerDocument.createElement('pre');
-        preEl.classList.add('language-sparql');
-        const codeEl = el.ownerDocument.createElement('code');
-        codeEl.classList.add('language-sparql');
-        codeEl.textContent = source;
-        preEl.appendChild(codeEl);
-        el.appendChild(preEl);
+        const container = el.ownerDocument.createElement('div');
+        container.classList.add('rdf-sparql-container');
+
+        // Create a minimal clickable header to edit the query
+        const editHeader = el.ownerDocument.createElement('div');
+        editHeader.classList.add('rdf-sparql-edit-header');
+        editHeader.textContent = 'View query';
+        editHeader.style.cursor = 'pointer';
+        editHeader.title = 'Click to edit query';
+
+        // Add click handler for edit functionality
+        editHeader.addEventListener('click', () => {
+          this.handleSparqlEdit(source, ctx);
+        });
+
+        container.appendChild(editHeader);
 
         if (this.sparqlCallback) {
           // Create a container for the results with proper internal structure
-          const container = el.ownerDocument.createElement('div');
-          container.classList.add('rdf-sparql-results-container');
+          const resultsContainer = el.ownerDocument.createElement('div');
+          resultsContainer.classList.add('rdf-sparql-results-container');
 
           // Create the result element that the callback expects
           const resultEl = el.ownerDocument.createElement('div');
           resultEl.classList.add('rdf-sparql-result');
-          container.appendChild(resultEl);
+          resultsContainer.appendChild(resultEl);
 
-          el.appendChild(container);
+          container.appendChild(resultsContainer);
 
           console.log(
             'CodeBlockProcessor: Created SPARQL container with result element'
           );
-          await this.sparqlCallback(source, container, ctx);
+          await this.sparqlCallback(source, resultsContainer, ctx);
         }
+
+        el.appendChild(container);
       }
     );
+  }
+
+  /**
+   * Handle clicking on a SPARQL query to edit it
+   */
+  private handleSparqlEdit(
+    source: string,
+    ctx: MarkdownPostProcessorContext
+  ): void {
+    // Get the active file
+    const file = this.app.vault.getAbstractFileByPath(ctx.sourcePath) as TFile;
+    if (!file) {
+      console.error('Could not find file for editing:', ctx.sourcePath);
+      return;
+    }
+
+    // Open the file for editing
+    this.app.workspace
+      .getLeaf()
+      .openFile(file)
+      .then(() => {
+        // Get the active editor
+        const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
+        if (!activeView || !activeView.editor) {
+          console.error('Could not get active editor');
+          return;
+        }
+
+        const editor = activeView.editor;
+        const content = editor.getValue();
+
+        // Find the SPARQL code block in the content
+        const lines = content.split('\n');
+        let startLine = -1;
+        let endLine = -1;
+        let inSparqlBlock = false;
+
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i].trim();
+
+          if (line.startsWith('```sparql')) {
+            inSparqlBlock = true;
+            startLine = i;
+            continue;
+          }
+
+          if (inSparqlBlock && line.startsWith('```')) {
+            endLine = i;
+            const blockContent = lines.slice(startLine + 1, endLine).join('\n');
+
+            // Check if this is the block we're looking for
+            if (blockContent.trim() === source.trim()) {
+              // Position cursor at the start of the SPARQL content
+              editor.setCursor({ line: startLine + 1, ch: 0 });
+              // Select the entire SPARQL content for easy editing
+              editor.setSelection(
+                { line: startLine + 1, ch: 0 },
+                { line: endLine - 1, ch: lines[endLine - 1].length }
+              );
+              return;
+            }
+
+            inSparqlBlock = false;
+            startLine = -1;
+          }
+        }
+
+        console.error('Could not find SPARQL block in file content');
+      });
   }
 
   /**
@@ -578,7 +667,10 @@ export class CodeBlockProcessor extends Component {
       return;
     }
 
-    const tableEl = el.createEl('table', { cls: 'rdf-results-table' });
+    const tableContainer = el.createDiv({ cls: 'rdf-results-table-container' });
+    const tableEl = tableContainer.createEl('table', {
+      cls: 'rdf-results-table',
+    });
 
     // Create header
     const headerEl = tableEl.createEl('thead');
@@ -603,9 +695,11 @@ export class CodeBlockProcessor extends Component {
         const tdEl = rowEl.createEl('td');
         const value = binding[variable];
         if (value) {
-          tdEl.textContent = this.formatRdfTerm(value);
-          if (value.type === 'uri') {
-            tdEl.addClass('rdf-uri');
+          const formattedValue = this.formatRdfTerm(value);
+          tdEl.textContent = formattedValue.text;
+          tdEl.addClass(formattedValue.cssClass);
+          if (formattedValue.title) {
+            tdEl.title = formattedValue.title;
           }
         }
       }
@@ -660,27 +754,80 @@ export class CodeBlockProcessor extends Component {
     value: string;
     datatype?: string;
     language?: string;
-  }): string {
-    if (!term) return '';
+  }): { text: string; cssClass: string; title?: string } {
+    if (!term) return { text: '', cssClass: '' };
 
     switch (term.type) {
       case 'uri':
-        return `<${term.value}>`;
-      case 'literal':
-        if (
+        // Try to convert URI to CURIE if PrefixService is available
+        if (this.rdfService) {
+          try {
+            const prefixService = this.rdfService.getPrefixService();
+            const prefixContext = prefixService.createPrefixContext();
+            const curie = prefixService.createCurie(term.value, prefixContext);
+
+            if (curie) {
+              return {
+                text: curie,
+                cssClass: 'rdf-curie',
+                title: `<${term.value}>`, // Show full URI in tooltip
+              };
+            }
+          } catch (error) {
+            // Fall back to full URI if prefix service fails
+          }
+        }
+
+        return {
+          text: `<${term.value}>`,
+          cssClass: 'rdf-uri',
+        };
+
+      case 'literal': {
+        let text = `"${term.value}"`;
+        if (term.language) {
+          text += `@${term.language}`;
+        } else if (
           term.datatype &&
           term.datatype !== 'http://www.w3.org/2001/XMLSchema#string'
         ) {
-          return `"${term.value}"^^<${term.datatype}>`;
-        } else if (term.language) {
-          return `"${term.value}"@${term.language}`;
-        } else {
-          return `"${term.value}"`;
+          // Try to shorten datatype URI to CURIE
+          let datatypeText = `<${term.datatype}>`;
+          if (this.rdfService) {
+            try {
+              const prefixService = this.rdfService.getPrefixService();
+              const prefixContext = prefixService.createPrefixContext();
+              const curie = prefixService.createCurie(
+                term.datatype,
+                prefixContext
+              );
+              if (curie) {
+                datatypeText = curie;
+              }
+            } catch (error) {
+              // Fall back to full URI
+            }
+          }
+          text += `^^${datatypeText}`;
         }
+
+        return {
+          text,
+          cssClass: 'rdf-literal',
+        };
+      }
+
       case 'bnode':
-        return `_:${term.value}`;
+        return {
+          text: `_:${term.value}`,
+          cssClass: 'rdf-bnode',
+        };
+
       default:
-        return term.value || '';
+        return {
+          text: term.value || '',
+          cssClass: 'rdf-literal',
+        };
     }
   }
 }
