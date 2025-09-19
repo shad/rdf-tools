@@ -15,7 +15,6 @@ WHERE {
 }
 ```
 
-
 ```sparql
 # @view table
 select *

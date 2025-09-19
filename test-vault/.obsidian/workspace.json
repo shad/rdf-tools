@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "hellboy-universe.md",
+                "file": "people/alice.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "hellboy-universe"
+              "title": "alice"
             }
           }
         ]
@@ -78,8 +78,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 300,
-    "collapsed": true
+    "width": 300
   },
   "right": {
     "id": "4955c44f83b034db",
@@ -170,7 +169,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 613.5
+    "width": 843.5
   },
   "left-ribbon": {
     "hiddenItems": {
@@ -183,9 +182,27 @@
       "bases:Create new base": false
     }
   },
-  "active": "b98252733fb73756",
+  "active": "9cd4d9c3cad6c7d4",
   "lastOpenFiles": [
+    "cache-testing.md",
+    "people/alice.md",
+    "README.md",
     "hellboy-universe.md",
-    "hellboy-queries.md"
+    "performance-testing.md",
+    "hellboy-queries.md",
+    "organizations/acme-corp.md",
+    "people/bob.md",
+    "people/charlie.md",
+    "people/diana.md",
+    "graph-testing.md",
+    "projects/project-ai.md",
+    "projects/project-mobile.md",
+    "projects/project-nlp.md",
+    "events/semantic-web-meetup.md",
+    "projects/project-rdf.md",
+    "events",
+    "projects",
+    "organizations",
+    "people"
   ]
 }
