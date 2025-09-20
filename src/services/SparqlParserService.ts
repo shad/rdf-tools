@@ -1,6 +1,7 @@
 import { Parser, SparqlQuery as ParsedSparqlQuery } from 'sparqljs';
 import { SparqlQuery, MutableSparqlQuery } from '../models/SparqlQuery';
 import { PrefixService } from './PrefixService';
+import { parseSparqlQuery } from '../utils/parsing';
 
 /**
  * Error information for SPARQL parsing failures
@@ -144,46 +145,34 @@ export class SparqlParserService {
         options.additionalPrefixes
       );
 
-      // Parse with sparqljs
-      const parsedQuery = this.parser.parse(expandedQuery) as ParsedSparqlQuery;
-      const parseTimeMs = Date.now() - startTime;
+      // Use pure parsing function instead of direct sparqljs
+      const parseResult = parseSparqlQuery(expandedQuery, {
+        baseUri: options.baseUri,
+        additionalPrefixes: {}, // Prefixes already added above
+      });
 
-      // Extract information from parsed query - use queryType property for sparqljs
-      const queryWithType = parsedQuery as {
-        queryType?: string;
-        type?: string;
-      };
-      const queryType = queryWithType.queryType || parsedQuery.type;
-
-      const prefixes = parsedQuery.prefixes || {};
-
-      let fromGraphs: string[] = [];
-      let fromNamedGraphs: string[] = [];
-      const warnings: string[] = [];
-
-      // Extract FROM clauses based on query type
-      if ('from' in parsedQuery) {
-        if (parsedQuery.from?.default) {
-          fromGraphs = parsedQuery.from.default.map(g => g.value);
-        }
-        if (parsedQuery.from?.named) {
-          fromNamedGraphs = parsedQuery.from.named.map(g => g.value);
-        }
+      if (!parseResult.success) {
+        return {
+          success: false,
+          error: parseResult.error,
+          parseTimeMs: parseResult.parseTimeMs,
+        };
       }
 
-      // Check for features that might need warnings
-      if (queryType === 'update') {
+      // Add service-specific warnings that the pure function doesn't handle
+      const warnings: string[] = [];
+      if (parseResult.queryType === 'UPDATE') {
         warnings.push('Update queries may modify data - use with caution');
       }
 
       return {
         success: true,
-        parsedQuery,
-        queryType,
-        prefixes,
-        fromGraphs,
-        fromNamedGraphs,
-        parseTimeMs,
+        parsedQuery: parseResult.parsedQuery,
+        queryType: parseResult.queryType,
+        prefixes: parseResult.prefixes,
+        fromGraphs: parseResult.fromGraphs,
+        fromNamedGraphs: parseResult.fromNamedGraphs,
+        parseTimeMs: parseResult.parseTimeMs,
         warnings: warnings.length > 0 ? warnings : undefined,
       };
     } catch (error) {

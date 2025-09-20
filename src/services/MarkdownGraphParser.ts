@@ -1,4 +1,5 @@
 import { Parser, Quad } from 'n3';
+import { extractTurtleBlocks } from '../utils/parsing';
 
 /**
  * Error information for failed turtle block parsing
@@ -66,7 +67,15 @@ export class MarkdownGraphParser {
       };
 
       try {
-        const turtleBlocks = this.extractTurtleBlocks(markdownContent);
+        // Use pure function for extraction
+        const pureBlocks = extractTurtleBlocks(markdownContent);
+        // Convert to format expected by rest of this method
+        const turtleBlocks = pureBlocks.map((block, index) => ({
+          index,
+          content: block.content,
+          startLine: block.startLine,
+          endLine: block.endLine,
+        }));
         result.totalBlocks = turtleBlocks.length;
 
         if (turtleBlocks.length === 0) {
