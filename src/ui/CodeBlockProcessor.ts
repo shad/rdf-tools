@@ -7,15 +7,11 @@ import {
   MarkdownView,
 } from 'obsidian';
 import {
-  TurtleParseResult,
-  TurtleParseError,
-} from '../services/TurtleParserService';
-import {
   SparqlParseResult,
   SparqlParseError,
-} from '../services/SparqlParserService';
-import { QueryResults } from '../models/QueryResults';
-import type { PrefixService } from '../services/PrefixService';
+} from '@/services/SparqlParserService';
+import { QueryResults } from '@/models';
+import type { PrefixService } from '@/services/PrefixService';
 
 /**
  * Options for rendering code block results
@@ -195,34 +191,6 @@ export class CodeBlockProcessor extends Component {
   }
 
   /**
-   * Render turtle parse results
-   */
-  renderTurtleResult(
-    container: HTMLElement,
-    result: TurtleParseResult,
-    options: RenderOptions = {}
-  ): void {
-    const resultEl = container.querySelector(
-      '.rdf-turtle-result'
-    ) as HTMLElement;
-    if (!resultEl) {
-      console.warn(
-        'CodeBlockProcessor: Could not find .rdf-turtle-result element'
-      );
-      return;
-    }
-
-    // Clear previous results
-    resultEl.innerHTML = '';
-
-    if (result.success) {
-      this.renderTurtleSuccess(resultEl, result, options);
-    } else {
-      this.renderTurtleError(resultEl, result.error!, options);
-    }
-  }
-
-  /**
    * Render SPARQL parse/execution results
    */
   renderSparqlResult(
@@ -259,63 +227,6 @@ export class CodeBlockProcessor extends Component {
     // Show query execution results
     if (queryResults) {
       this.renderQueryResults(resultEl, queryResults, options);
-    }
-  }
-
-  /**
-   * Render successful turtle parse
-   */
-  private renderTurtleSuccess(
-    el: HTMLElement,
-    result: TurtleParseResult,
-    options: RenderOptions
-  ): void {
-    const successEl = el.createDiv({ cls: 'rdf-result-success' });
-
-    const icon = successEl.createSpan({ cls: 'rdf-result-icon' });
-    icon.innerHTML = '✓';
-
-    const message = successEl.createSpan({ cls: 'rdf-result-message' });
-    message.textContent = `Parsed ${result.tripleCount} triple${result.tripleCount !== 1 ? 's' : ''}`;
-
-    if (options.showMetrics && result.parseTimeMs !== undefined) {
-      const metrics = successEl.createSpan({ cls: 'rdf-result-metrics' });
-      metrics.textContent = ` (${result.parseTimeMs}ms)`;
-    }
-
-    // Show prefix information if available
-    if (result.prefixes && Object.keys(result.prefixes).length > 0) {
-      const prefixInfo = el.createDiv({ cls: 'rdf-prefix-info' });
-      prefixInfo.textContent = `Prefixes: ${Object.keys(result.prefixes).join(', ')}`;
-    }
-  }
-
-  /**
-   * Render turtle parse error
-   */
-  private renderTurtleError(
-    el: HTMLElement,
-    error: TurtleParseError,
-    options: RenderOptions
-  ): void {
-    const errorEl = el.createDiv({ cls: 'rdf-result-error' });
-
-    const icon = errorEl.createSpan({ cls: 'rdf-result-icon' });
-    icon.innerHTML = '✗';
-
-    const message = errorEl.createSpan({ cls: 'rdf-result-message' });
-    message.textContent = error.message;
-
-    // Show line/column if available
-    if (error.line !== undefined && options.showDetailedErrors) {
-      const location = errorEl.createDiv({ cls: 'rdf-error-location' });
-      location.textContent = `Line ${error.line}${error.column ? `, Column ${error.column}` : ''}`;
-    }
-
-    // Show context/suggestions if available
-    if (error.context && options.showDetailedErrors) {
-      const context = errorEl.createDiv({ cls: 'rdf-error-context' });
-      context.textContent = error.context;
     }
   }
 

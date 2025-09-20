@@ -132,9 +132,15 @@ export class SparqlParserService {
     }
 
     try {
+      // Add BASE declaration if baseUri is provided and not already present
+      let preprocessedQuery = queryString;
+      if (options.baseUri && !queryString.toLowerCase().includes('base')) {
+        preprocessedQuery = `BASE <${options.baseUri}>\n${queryString}`;
+      }
+
       // Add common prefixes if not already present
       const expandedQuery = this.addMissingPrefixes(
-        queryString,
+        preprocessedQuery,
         options.additionalPrefixes
       );
 

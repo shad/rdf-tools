@@ -70,31 +70,6 @@ export class SparqlQueryTracker {
   }
 
   /**
-   * Update an existing query (when content changes)
-   */
-  updateQuery(queryId: string, newQuery: SparqlQuery): boolean {
-    const queryInfo = this.queryById.get(queryId);
-    if (!queryInfo) {
-      return false;
-    }
-
-    // Remove old graph dependencies
-    this.removeFromGraphMaps(queryInfo.dependentGraphs, queryId);
-
-    // Analyze new dependencies
-    const newDependentGraphs = this.analyzeDependencies(newQuery);
-
-    // Update query info
-    queryInfo.query = newQuery;
-    queryInfo.dependentGraphs = newDependentGraphs;
-
-    // Add new graph dependencies
-    this.addToGraphMaps(newDependentGraphs, queryId);
-
-    return true;
-  }
-
-  /**
    * Unregister a query (when code block is removed or file closed)
    */
   unregisterQuery(queryId: string): boolean {

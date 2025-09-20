@@ -6,16 +6,15 @@ import {
   MarkdownPostProcessorContext,
 } from 'obsidian';
 import { CodeBlockExtractorService } from './CodeBlockExtractorService';
-import { TurtleParserService } from './TurtleParserService';
 import { SparqlParserService } from './SparqlParserService';
 import { GraphService } from './GraphService';
 import { QueryExecutorService } from './QueryExecutorService';
 import { PrefixService } from './PrefixService';
 import { SparqlQueryTracker, SparqlQueryInfo } from './SparqlQueryTracker';
-import { CodeBlockProcessor } from '../ui/CodeBlockProcessor';
-import { RdfToolsSettings } from '../models/RdfToolsSettings';
-import { QueryResultsType } from '../models/QueryResults';
-import { SparqlQuery } from '../models/SparqlQuery';
+import { CodeBlockProcessor } from '@/ui/CodeBlockProcessor';
+import { RdfToolsSettings } from '@/models';
+import { QueryResultsType } from '@/models';
+import { SparqlQuery } from '@/models';
 import { MarkdownErrorReporter } from './MarkdownErrorReporter';
 
 /**
@@ -24,7 +23,6 @@ import { MarkdownErrorReporter } from './MarkdownErrorReporter';
 export class RdfToolsService extends Component {
   // Core services
   private codeBlockExtractor: CodeBlockExtractorService;
-  private turtleParser: TurtleParserService;
   private sparqlParser: SparqlParserService;
   private graphService: GraphService;
   private queryExecutor: QueryExecutorService;
@@ -48,7 +46,6 @@ export class RdfToolsService extends Component {
 
     // Initialize services
     this.codeBlockExtractor = new CodeBlockExtractorService();
-    this.turtleParser = new TurtleParserService(this.prefixService);
     this.sparqlParser = new SparqlParserService(this.prefixService);
     this.graphService = new GraphService(this.app, this.prefixService);
     this.queryExecutor = new QueryExecutorService(this.graphService);
@@ -135,11 +132,34 @@ export class RdfToolsService extends Component {
         0 // end line - we'd need to track this properly
       );
 
-      // Parse the SPARQL query with base URI
       const baseUri = this.graphService.getGraphUriForFile(file.path);
+
+      // CORRECT EXECUTION ORDER:
+      // 1. Parse SPARQL first to extract FROM clauses
+      const initialParseResult = await this.sparqlParser.parseSparqlContent(
+        source,
+        {
+          baseUri,
+        }
+      );
+
+      // 2. Determine target graphs using parsed FROM clauses
+      const targetGraphs = this.determineTargetGraphsFromParseResult(
+        initialParseResult,
+        file
+      );
+
+      // 3. Extract prefixes from correct target graphs
+      const graphPrefixes = await this.extractPrefixesFromGraphs(targetGraphs);
+
+      // 4. Final parse with all context (base URI + extracted prefixes)
       const parseResult = await this.sparqlParser.parseSparqlQuery(query, {
         baseUri,
+        additionalPrefixes: graphPrefixes,
       });
+
+      // Update query context with the correct base URI
+      query.context.baseUri = baseUri;
 
       // Update query with parse results
       this.sparqlParser.updateSparqlQueryWithParseResults(query, parseResult);
@@ -177,7 +197,7 @@ export class RdfToolsService extends Component {
       }
 
       // Execute the query if parsing succeeded and auto-execution is enabled
-      if (parseResult.success && this.settings.autoExecuteQueries !== false) {
+      if (parseResult.success && this.settings.autoExecuteQueries) {
         // Show loading state
         try {
           this.codeBlockProcessor.renderSparqlResult(container, parseResult, {
@@ -341,13 +361,6 @@ export class RdfToolsService extends Component {
    * Set up workspace integration for tracking query lifecycle
    */
   private setupWorkspaceIntegration(): void {
-    // Clean up stale DOM references periodically (primary cleanup mechanism)
-    this.plugin.registerInterval(
-      window.setInterval(() => {
-        this.cleanupStaleQueries();
-      }, 10000) // Every 10 seconds
-    );
-
     // Additional cleanup when layout changes
     this.plugin.registerEvent(
       this.app.workspace.on('layout-change', () => {
@@ -366,18 +379,11 @@ export class RdfToolsService extends Component {
     const allQueries = this.sparqlQueryTracker.getAllQueries();
     if (allQueries.length === 0) return;
 
-    let removedCount = 0;
-
     for (const queryInfo of allQueries) {
       // Check if DOM container still exists
       if (!document.body.contains(queryInfo.container)) {
         this.sparqlQueryTracker.unregisterQuery(queryInfo.id);
-        removedCount++;
       }
-    }
-
-    if (removedCount > 0 && this.settings.enableDebugLogging) {
-      // Debug logging would go here if needed
     }
   }
 
@@ -446,11 +452,9 @@ export class RdfToolsService extends Component {
       );
 
       if (this.settings.enableDebugLogging) {
-        if (this.settings.enableDebugLogging) {
-          console.log(
-            `RDF Tools: Re-executing ${filteredQueries.length} queries (${dependentQueries.length - filteredQueries.length} already executing)`
-          );
-        }
+        console.log(
+          `RDF Tools: Re-executing ${filteredQueries.length} queries (${dependentQueries.length - filteredQueries.length} already executing)`
+        );
       }
 
       if (filteredQueries.length > 0) {
@@ -458,19 +462,15 @@ export class RdfToolsService extends Component {
           async (queryInfo, index) => {
             try {
               if (this.settings.enableDebugLogging) {
-                if (this.settings.enableDebugLogging) {
-                  console.log(
-                    `RDF Tools: Starting re-execution ${index + 1}/${filteredQueries.length} for ${queryInfo.file.path}`
-                  );
-                }
+                console.log(
+                  `RDF Tools: Starting re-execution ${index + 1}/${filteredQueries.length} for ${queryInfo.file.path}`
+                );
               }
               await this.reExecuteSparqlQuery(queryInfo);
               if (this.settings.enableDebugLogging) {
-                if (this.settings.enableDebugLogging) {
-                  console.log(
-                    `RDF Tools: Completed re-execution ${index + 1}/${filteredQueries.length} for ${queryInfo.file.path}`
-                  );
-                }
+                console.log(
+                  `RDF Tools: Completed re-execution ${index + 1}/${filteredQueries.length} for ${queryInfo.file.path}`
+                );
               }
             } catch (error) {
               console.error(
@@ -537,10 +537,6 @@ export class RdfToolsService extends Component {
         viewContainer.querySelectorAll('[data-lang="sparql"]')
       );
 
-      if (this.settings.enableDebugLogging) {
-        // Debug logging for SPARQL blocks found
-      }
-
       for (const block of sparqlBlocks) {
         // Try to match the query by comparing the SPARQL text content
         const codeElement = block.querySelector('code');
@@ -550,9 +546,6 @@ export class RdfToolsService extends Component {
 
           // If the query text matches, look for the result container
           if (blockQueryText === targetQueryText) {
-            if (this.settings.enableDebugLogging) {
-              // Debug logging for query match found
-            }
             // Look for the result container that should be after this code block
             let resultContainer = block.nextElementSibling;
             while (resultContainer) {
@@ -597,35 +590,23 @@ export class RdfToolsService extends Component {
     queryInfo: SparqlQueryInfo
   ): Promise<void> {
     if (this.settings.enableDebugLogging) {
-      if (this.settings.enableDebugLogging) {
-        console.log(
-          `RDF Tools: reExecuteSparqlQuery called for ${queryInfo.file.path}, query ID: ${queryInfo.id}`
-        );
-      }
+      console.log(
+        `RDF Tools: reExecuteSparqlQuery called for ${queryInfo.file.path}, query ID: ${queryInfo.id}`
+      );
     }
 
     try {
       // Check if the container still exists in the DOM
       if (!document.body.contains(queryInfo.container)) {
-        if (this.settings.enableDebugLogging) {
-          // Debug logging for container not in DOM
-        }
-
         // Try to find the container by looking for SPARQL code blocks in the current file
         const updatedContainer = this.findSparqlContainerInFile(
           queryInfo.file,
           queryInfo.query
         );
         if (updatedContainer) {
-          if (this.settings.enableDebugLogging) {
-            // Debug logging for container updated
-          }
           // Update the container reference
           queryInfo.container = updatedContainer;
         } else {
-          if (this.settings.enableDebugLogging) {
-            // Debug logging for container not found
-          }
           // Container no longer exists, unregister the query
           this.sparqlQueryTracker.unregisterQuery(queryInfo.id);
           return;
@@ -676,13 +657,7 @@ export class RdfToolsService extends Component {
       }
 
       // Execute the query
-      if (this.settings.enableDebugLogging) {
-        // Debug logging for query execution start
-      }
       const results = await this.queryExecutor.executeQuery(queryInfo.query);
-      if (this.settings.enableDebugLogging) {
-        // Debug logging for query execution complete
-      }
 
       // Update display with results
       try {
@@ -770,5 +745,74 @@ export class RdfToolsService extends Component {
    */
   getPrefixService(): PrefixService {
     return this.prefixService;
+  }
+
+  /**
+   * Determine target graphs using parsed SPARQL result (fixes execution order bug)
+   */
+  private determineTargetGraphsFromParseResult(
+    parseResult: { fromGraphs?: string[]; fromNamedGraphs?: string[] },
+    file: TFile
+  ): string[] {
+    // Use FROM clauses from parsed result if available
+    const fromGraphs = parseResult.fromGraphs || [];
+    const fromNamedGraphs = parseResult.fromNamedGraphs || [];
+
+    // If explicit FROM clauses are specified, use only those
+    if (fromGraphs.length > 0 || fromNamedGraphs.length > 0) {
+      const allFromGraphs = [...fromGraphs, ...fromNamedGraphs];
+      const resolvedGraphs: string[] = [];
+
+      for (const graphUri of allFromGraphs) {
+        const resolved = this.graphService.resolveVaultUri(graphUri);
+        resolvedGraphs.push(...resolved);
+      }
+
+      return resolvedGraphs;
+    }
+
+    // If no FROM clauses, use the current file's graph
+    const currentFileGraph = this.graphService.getGraphUriForFile(file.path);
+    return [currentFileGraph];
+  }
+
+  /**
+   * Extract prefixes from target graphs by reading files directly
+   */
+  private async extractPrefixesFromGraphs(
+    graphUris: string[]
+  ): Promise<Record<string, string>> {
+    const allPrefixes: Record<string, string> = {};
+
+    for (const graphUri of graphUris) {
+      try {
+        // Extract file path from graph URI
+        const filePath = graphUri.replace('vault://', '');
+        const file = this.app.vault.getAbstractFileByPath(filePath);
+
+        if (file && file instanceof TFile) {
+          const content = await this.app.vault.read(file);
+
+          // Extract prefixes from turtle blocks in the file
+          const turtleBlocks = this.codeBlockExtractor.extractTurtleBlocks({
+            file,
+            content,
+            languages: ['turtle'],
+          });
+
+          for (const block of turtleBlocks) {
+            const prefixes = this.prefixService.extractPrefixesFromTurtle(
+              block.content
+            );
+            Object.assign(allPrefixes, prefixes);
+          }
+        }
+      } catch (error) {
+        console.warn(`Failed to extract prefixes from ${graphUri}:`, error);
+        // Continue with other files even if one fails
+      }
+    }
+
+    return allPrefixes;
   }
 }

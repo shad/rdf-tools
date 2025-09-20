@@ -1,10 +1,34 @@
 import { QueryEngine } from '@comunica/query-sparql-rdfjs';
-import { Store, Quad, DataFactory } from 'n3';
-import { SparqlQuery, SparqlQueryUtils } from '../models/SparqlQuery';
-import { QueryResults, QueryResultsType } from '../models/QueryResults';
-import { QueryExecutionDetails } from '../models/QueryExecutionDetails';
-import { BindingHelpers } from '../models/BindingHelpers';
+import { Store, Quad, DataFactory, Term, Variable } from 'n3';
+import { SparqlQuery, SparqlQueryUtils } from '@/models';
+import { QueryResults, QueryResultsType } from '@/models';
+import { QueryExecutionDetails } from '@/models/QueryExecutionDetails';
 import { GraphService } from './GraphService';
+
+/**
+ * Binding result in the format expected by our UI
+ */
+interface ProcessedBinding {
+  type: string;
+  value: string;
+  datatype?: string;
+  language?: string;
+}
+
+/**
+ * Interface for Comunica binding entries (Immutable.js Map)
+ */
+interface ComunicaBindingEntries {
+  readonly size: number;
+  entrySeq(): Iterable<[Variable, Term]>;
+}
+
+/**
+ * Interface for binding objects from Comunica
+ */
+interface ComunicaBinding {
+  entries: ComunicaBindingEntries | Map<string, Term> | Record<string, Term>;
+}
 
 /**
  * Options for query execution
@@ -86,6 +110,8 @@ export class QueryExecutorService {
       // Determine which graphs to query
       const targetGraphs = this.determineTargetGraphs(query);
       executionInfo.usedGraphs = targetGraphs;
+
+      console.log('*** targetGraphs', targetGraphs);
 
       if (targetGraphs.length === 0) {
         return this.createErrorResult(
@@ -306,6 +332,7 @@ export class QueryExecutorService {
     const bindingsStream = await this.engine.queryBindings(query.queryString, {
       sources: context.sources as [Store, ...Store[]],
       signal: abortSignal,
+      baseIRI: query.context.baseUri,
     });
 
     const bindings: Record<
@@ -335,8 +362,8 @@ export class QueryExecutorService {
           return;
         }
 
-        // Process the binding using our helper
-        const bindingObj = BindingHelpers.processBinding(binding);
+        // Process the binding
+        const bindingObj = this.processBinding(binding);
         bindings.push(bindingObj);
         count++;
       });
@@ -369,6 +396,7 @@ export class QueryExecutorService {
     const quadStream = await this.engine.queryQuads(query.queryString, {
       sources: context.sources as [Store, ...Store[]],
       signal: abortSignal,
+      baseIRI: query.context.baseUri,
     });
 
     const quads: Quad[] = [];
@@ -428,6 +456,7 @@ export class QueryExecutorService {
     const result = await this.engine.queryBoolean(query.queryString, {
       sources: context.sources as [Store, ...Store[]],
       signal: abortSignal,
+      baseIRI: query.context.baseUri,
     });
 
     return {
@@ -750,6 +779,82 @@ export class QueryExecutorService {
         return 4; // Just a boolean
       default:
         return 0;
+    }
+  }
+
+  /**
+   * Convert a Comunica binding object to our processed binding format
+   */
+  private processBinding(binding: unknown): Record<string, ProcessedBinding> {
+    const bindingObj: Record<string, ProcessedBinding> = {};
+    const comunicaBinding = binding as ComunicaBinding;
+
+    if (!comunicaBinding?.entries) {
+      return bindingObj;
+    }
+
+    // Handle Immutable.js Map (used by Comunica)
+    if (this.isComunicaBindingEntries(comunicaBinding.entries)) {
+      for (const [variable, term] of comunicaBinding.entries.entrySeq()) {
+        const varName = variable.value || variable.toString();
+        bindingObj[varName] = this.formatTermForBinding(term);
+      }
+    } else if (comunicaBinding.entries instanceof Map) {
+      // Standard JavaScript Map
+      for (const [variable, term] of comunicaBinding.entries.entries()) {
+        bindingObj[variable] = this.formatTermForBinding(term);
+      }
+    } else if (typeof comunicaBinding.entries === 'object') {
+      // Plain object fallback
+      for (const [varName, term] of Object.entries(comunicaBinding.entries)) {
+        if (term && typeof term === 'object' && 'value' in term) {
+          bindingObj[varName] = this.formatTermForBinding(term);
+        }
+      }
+    }
+
+    return bindingObj;
+  }
+
+  /**
+   * Type guard for Comunica binding entries
+   */
+  private isComunicaBindingEntries(
+    entries: ComunicaBindingEntries | Map<string, Term> | Record<string, Term>
+  ): entries is ComunicaBindingEntries {
+    return (
+      typeof entries === 'object' &&
+      'size' in entries &&
+      'entrySeq' in entries &&
+      typeof entries.entrySeq === 'function'
+    );
+  }
+
+  /**
+   * Format an N3.js Term for our binding result format
+   */
+  private formatTermForBinding(term: Term): ProcessedBinding {
+    return {
+      type: this.getTermType(term),
+      value: term.value,
+      datatype: 'datatype' in term ? term.datatype?.value : undefined,
+      language: 'language' in term ? term.language : undefined,
+    };
+  }
+
+  /**
+   * Get term type for binding results using N3.js term types
+   */
+  private getTermType(term: Term): string {
+    switch (term.termType) {
+      case 'NamedNode':
+        return 'uri';
+      case 'BlankNode':
+        return 'bnode';
+      case 'Literal':
+        return 'literal';
+      default:
+        return 'unknown';
     }
   }
 

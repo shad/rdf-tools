@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "people/alice.md",
+                "file": "hellboy-universe.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "alice"
+              "title": "hellboy-universe"
             }
           }
         ]
@@ -95,7 +95,7 @@
               "type": "markdown",
               "state": {
                 "file": "hellboy-queries.md",
-                "mode": "preview",
+                "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
@@ -169,7 +169,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 843.5
+    "width": 474.5
   },
   "left-ribbon": {
     "hiddenItems": {
@@ -184,22 +184,26 @@
   },
   "active": "9cd4d9c3cad6c7d4",
   "lastOpenFiles": [
-    "cache-testing.md",
-    "people/alice.md",
-    "README.md",
-    "hellboy-universe.md",
-    "performance-testing.md",
     "hellboy-queries.md",
-    "organizations/acme-corp.md",
-    "people/bob.md",
-    "people/charlie.md",
-    "people/diana.md",
+    "people/alice.md",
+    "steve.md",
+    "cache-testing.md",
+    "vault-wide-test.md",
+    "prefix-test.md",
     "graph-testing.md",
-    "projects/project-ai.md",
-    "projects/project-mobile.md",
-    "projects/project-nlp.md",
-    "events/semantic-web-meetup.md",
+    "README.md",
+    "performance-testing.md",
+    "hellboy-universe.md",
+    "base-uri-testing.md",
     "projects/project-rdf.md",
+    "projects/project-nlp.md",
+    "projects/project-mobile.md",
+    "projects/project-ai.md",
+    "people/diana.md",
+    "people/charlie.md",
+    "people/bob.md",
+    "organizations/acme-corp.md",
+    "events/semantic-web-meetup.md",
     "events",
     "projects",
     "organizations",

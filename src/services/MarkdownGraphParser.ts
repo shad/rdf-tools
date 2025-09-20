@@ -205,15 +205,23 @@ export class MarkdownGraphParser {
         return;
       }
 
-      // Prepend default prefixes and manually resolve relative URIs
+      // Prepend base URI and default prefixes
+      const baseDeclaration = this.options.baseUri
+        ? `@base <${this.options.baseUri}> .`
+        : '';
+
       const prefixDeclarations = this.generatePrefixDeclarations(
         this.options.prefixes || {}
       );
 
-      // Manually resolve relative URIs in the block content
-      // const resolvedContent = this.resolveRelativeUris(block.content, this.options.baseUri || '');
+      // Combine base, prefixes, and content
+      const declarations = [baseDeclaration, prefixDeclarations]
+        .filter(Boolean)
+        .join('\n');
 
-      const contentWithPrefixes = prefixDeclarations + '\n' + block.content;
+      const contentWithPrefixes = declarations
+        ? declarations + '\n\n' + block.content
+        : block.content;
 
       const parser = new Parser({
         baseIRI: this.options.baseUri,
@@ -251,8 +259,7 @@ export class MarkdownGraphParser {
             if (prefixes) {
               const stringPrefixes: Record<string, string> = {};
               for (const [prefix, value] of Object.entries(prefixes)) {
-                stringPrefixes[prefix] =
-                  typeof value === 'string' ? value : value.value;
+                stringPrefixes[prefix] = value.value;
               }
               result.prefixes = { ...result.prefixes, ...stringPrefixes };
             }

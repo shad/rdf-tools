@@ -176,8 +176,7 @@ export class PrefixService {
 
     while ((match = prefixRegex.exec(turtleContent)) !== null) {
       const prefix = match[1] || ''; // Handle default prefix (@prefix : <...>)
-      const namespace = match[2];
-      prefixes[prefix] = namespace;
+      prefixes[prefix] = match[2];
     }
 
     return prefixes;
@@ -244,6 +243,7 @@ export class PrefixService {
       skos: 'http://www.w3.org/2004/02/skos/core#',
       schema: 'http://schema.org/',
       void: 'http://rdfs.org/ns/void#',
+      ex: 'https://example.org/',
     };
   }
 

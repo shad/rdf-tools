@@ -7,12 +7,13 @@ This file helps test cache invalidation when data changes. Make changes to other
 This query should update immediately when you modify people files:
 
 ```sparql
-SELECT ?person ?name ?dept ?project WHERE {
+SELECT ?person ?name ?dept ?project 
+FROM <vault://people/>
+WHERE {
     ?person foaf:name ?name ;
             ex:department ?dept ;
             ex:worksOn ?project .
 }
-FROM <vault://people/>
 ORDER BY ?dept ?name
 ```
 
@@ -21,12 +22,13 @@ ORDER BY ?dept ?name
 This query monitors project budgets and should update when project files change:
 
 ```sparql
-SELECT ?project ?name ?budget ?status WHERE {
+SELECT ?project ?name ?budget ?status 
+FROM <vault://projects/>
+WHERE {
     ?project foaf:name ?name ;
              ex:budget ?budget ;
              ex:status ?status .
 }
-FROM <vault://projects/>
 ORDER BY DESC(?budget)
 ```
 
@@ -35,10 +37,11 @@ ORDER BY DESC(?budget)
 Watch this update as you add/remove skills from people files:
 
 ```sparql
-SELECT ?skill (COUNT(?person) as ?peopleCount) WHERE {
+SELECT ?skill (COUNT(?person) as ?peopleCount)
+FROM <vault://people/>
+WHERE {
     ?person ex:skill ?skill .
 }
-FROM <vault://people/>
 GROUP BY ?skill
 ORDER BY DESC(?peopleCount) ?skill
 ```
@@ -59,7 +62,6 @@ SELECT ?person ?personName ?projectName ?eventName WHERE {
                foaf:name ?eventName .
     }
 }
-FROM <vault://>
 ORDER BY ?personName
 ```
 
@@ -83,17 +85,19 @@ ORDER BY ?personName
 
 ### Heavy Query (Test Caching Performance)
 ```sparql
-SELECT ?s ?p ?o WHERE {
+SELECT ?s ?p ?o 
+FROM <vault://>
+WHERE {
     ?s ?p ?o .
 }
-FROM <vault://>
 LIMIT 100
 ```
 
 ### Repeated Query (Should Use Cache)
 ```sparql
-SELECT ?person ?name WHERE {
+SELECT ?person ?name 
+FROM <vault://people/>
+WHERE {
     ?person foaf:name ?name .
 }
-FROM <vault://people/>
 ```
