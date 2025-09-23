@@ -39,6 +39,7 @@
 .turtle-prefixes td,
 .turtle-triples-preview th,
 .turtle-triples-preview td {
+  font-size: 14px;
   padding: 8px;
   text-align: left;
   border-bottom: 1px solid var(--background-modifier-border);
@@ -50,85 +51,8 @@
   font-weight: bold;
 }
 
-.turtle-uri {
-  font-family: var(--font-monospace);
-  font-size: 0.9em;
-}
-
-.turtle-term {
-  font-family: var(--font-monospace);
-  font-size: 0.85em;
-  max-width: 200px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.turtle-graph-info {
-  background-color: var(--background-secondary);
-  padding: 10px;
-  border-radius: 4px;
-  margin-top: 10px;
-}
-
-.turtle-graph-uri,
-.turtle-base-uri,
-.turtle-graph-status {
-  font-family: var(--font-monospace);
-  font-size: 0.9em;
-  margin: 5px 0;
-}
-
-.turtle-more-triples {
-  text-align: center;
-  font-style: italic;
-  margin-top: 10px;
-  opacity: 0.7;
-}
-
-.turtle-error-message,
-.turtle-parse-errors {
-  background-color: var(--background-secondary);
-  padding: 10px;
-  border-radius: 4px;
-  margin-top: 10px;
-}
-
-.turtle-error-message code,
-.turtle-parse-errors code {
-  background-color: var(--background-modifier-error-hover);
-  padding: 2px 4px;
-  border-radius: 2px;
-  font-size: 0.9em;
-}
-
-.turtle-parse-errors ul {
-  margin: 10px 0 0 0;
-  padding-left: 20px;
-}
-
-.turtle-parse-errors li {
-  margin-bottom: 5px;
-}
-
-/* Ribbon icon styles */
-.rdf-tools-ribbon-class {
-  color: var(--icon-color);
-}
-
-.rdf-tools-ribbon-class:hover {
-  color: var(--icon-color-hover);
-}
-
 /* RDF Tools Code Block Styles */
 
-/* Container styles for turtle and SPARQL blocks */
-.rdf-turtle-container,
-.rdf-sparql-container {
-  margin: 0;
-}
-
-.rdf-turtle-code,
 .rdf-sparql-code {
   border-radius: 6px;
   background-color: var(--code-background);
@@ -150,7 +74,6 @@
   color: var(--text-accent);
 }
 
-.rdf-turtle-result,
 .rdf-sparql-result {
   font-size: 0.9em;
   line-height: 1.4;
@@ -306,12 +229,12 @@
   font-style: italic;
 }
 
-/* Alternating row stripes */
-.rdf-results-table tr:nth-child(even) td {
+/* Alternating row stripes - target tbody rows specifically */
+.rdf-results-table tbody tr:nth-child(even) td {
   background-color: var(--background-primary-alt);
 }
 
-.rdf-results-table tr:nth-child(odd) td {
+.rdf-results-table tbody tr:nth-child(odd) td {
   background-color: var(--background-primary);
 }
 

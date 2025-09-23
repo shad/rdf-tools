@@ -25,3 +25,13 @@ WHERE {
 LIMIT 5
 ```
 
+```sparql
+SELECT (COUNT(*) as ?count)
+FROM <vault://>
+where { ?s ?p ?o . }
+```
+
+| test | foo  |     |
+| ---- | ---- | --- |
+| bar  | baz  |     |
+| asdf | asdf |     |
