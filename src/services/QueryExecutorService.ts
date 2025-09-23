@@ -1,34 +1,20 @@
 import { QueryEngine } from '@comunica/query-sparql-rdfjs';
-import { Store, Quad, DataFactory, Term, Variable } from 'n3';
+import { Store, Quad, DataFactory } from 'n3';
 import { SparqlQuery, SparqlQueryUtils } from '@/models';
 import { QueryResults, QueryResultsType } from '@/models';
 import { QueryExecutionDetails } from '@/models/QueryExecutionDetails';
 import { GraphService } from './GraphService';
-
-/**
- * Binding result in the format expected by our UI
- */
-interface ProcessedBinding {
-  type: string;
-  value: string;
-  datatype?: string;
-  language?: string;
-}
-
-/**
- * Interface for Comunica binding entries (Immutable.js Map)
- */
-interface ComunicaBindingEntries {
-  readonly size: number;
-  entrySeq(): Iterable<[Variable, Term]>;
-}
-
-/**
- * Interface for binding objects from Comunica
- */
-interface ComunicaBinding {
-  entries: ComunicaBindingEntries | Map<string, Term> | Record<string, Term>;
-}
+import {
+  transformBinding,
+  formatAskResults,
+  quadsToTurtle,
+} from '../utils/results';
+import {
+  createQueryPlan,
+  determineTargetGraphs,
+  validateQueryPlan,
+  getRequiredGraphUris,
+} from '../utils/planning';
 
 /**
  * Options for query execution
@@ -107,11 +93,29 @@ export class QueryExecutorService {
         }, timeoutMs);
       }
 
-      // Determine which graphs to query
-      const targetGraphs = this.determineTargetGraphs(query);
-      executionInfo.usedGraphs = targetGraphs;
+      // Create query execution plan using pure functions
+      const plan = createQueryPlan(
+        query.context.fromGraphs,
+        query.context.fromNamedGraphs,
+        query.location.file.path,
+        (uri: string) => this.graphService.resolveVaultUri(uri),
+        (filePath: string) => this.graphService.getGraphUriForFile(filePath)
+      );
 
-      console.log('*** targetGraphs', targetGraphs);
+      // Validate the query plan
+      const validation = validateQueryPlan(plan);
+      if (!validation.isValid) {
+        return this.createErrorResult(
+          query,
+          `Invalid query plan: ${validation.errors.join(', ')}`,
+          executionInfo,
+          Date.now() - startTime
+        );
+      }
+
+      // Get required graph URIs from the plan
+      const targetGraphs = getRequiredGraphUris(plan);
+      executionInfo.usedGraphs = [...targetGraphs];
 
       if (targetGraphs.length === 0) {
         return this.createErrorResult(
@@ -123,13 +127,10 @@ export class QueryExecutorService {
       }
 
       // Load target graphs using simplified API
-      const graphs = await this.graphService.getGraphs(targetGraphs);
+      const graphs = await this.graphService.getGraphs([...targetGraphs]);
 
-      // Create a single store with named graphs
+      // Create a single store based on the execution plan
       const combinedStore = new Store();
-      const fromGraphs = query.context.fromGraphs || [];
-      const fromNamedGraphs = query.context.fromNamedGraphs || [];
-      const allFromGraphs = [...fromGraphs, ...fromNamedGraphs];
 
       // Create a map of graph URI to graph for efficient lookup
       const graphMap = new Map<string, (typeof graphs)[0]>();
@@ -137,30 +138,28 @@ export class QueryExecutorService {
         graphMap.set(graph.uri, graph);
       }
 
-      if (allFromGraphs.length > 0) {
-        // FROM and FROM NAMED: load all with named graph identifiers
-        for (const graphUri of allFromGraphs) {
-          const graph = graphMap.get(graphUri);
-          if (graph) {
-            const quads = graph.store.getQuads(null, null, null, null);
-            const namedGraphNode = DataFactory.namedNode(graphUri);
+      // Process each graph specification from the plan
+      for (const spec of plan.graphSpecs) {
+        const graph = graphMap.get(spec.uri);
+        if (graph) {
+          const quads = graph.store.getQuads(null, null, null, null);
+
+          if (plan.strategy === 'default') {
+            // Default strategy: Add to default graph (no graph identifier)
+            for (const quad of quads) {
+              combinedStore.addQuad(quad.subject, quad.predicate, quad.object);
+            }
+          } else {
+            // FROM and FROM NAMED: Add with graph URI so Comunica can find them
+            const graphNode = DataFactory.namedNode(spec.uri);
             for (const quad of quads) {
               combinedStore.addQuad(
                 quad.subject,
                 quad.predicate,
                 quad.object,
-                namedGraphNode
+                graphNode
               );
             }
-          }
-        }
-      } else {
-        // No FROM clauses: use current file's graph as the default graph
-        for (const graph of graphs) {
-          const quads = graph.store.getQuads(null, null, null, null);
-          for (const quad of quads) {
-            // Add to default graph by omitting the 4th parameter (graph identifier)
-            combinedStore.addQuad(quad.subject, quad.predicate, quad.object);
           }
         }
       }
@@ -362,8 +361,8 @@ export class QueryExecutorService {
           return;
         }
 
-        // Process the binding
-        const bindingObj = this.processBinding(binding);
+        // Process the binding using pure function
+        const bindingObj = transformBinding(binding);
         bindings.push(bindingObj);
         count++;
       });
@@ -412,9 +411,9 @@ export class QueryExecutorService {
         quads.push(quad);
       });
 
-      quadStream.on('end', async () => {
-        // Convert quads to turtle format
-        const turtleContent = await this.quadsToTurtle(quads);
+      quadStream.on('end', () => {
+        // Convert quads to turtle format using pure function
+        const turtleContent = quadsToTurtle(quads);
 
         resolve({
           status: 'completed',
@@ -459,64 +458,8 @@ export class QueryExecutorService {
       baseIRI: query.context.baseUri,
     });
 
-    return {
-      status: 'completed',
-      queryType: 'ASK',
-      boolean: result,
-      resultCount: 1,
-      truncated: false,
-    };
-  }
-
-  /**
-   * Determine which graphs should be queried based on FROM clauses
-   */
-  private determineTargetGraphs(query: SparqlQuery): string[] {
-    const fromGraphs = query.context.fromGraphs;
-    const fromNamedGraphs = query.context.fromNamedGraphs;
-
-    // If explicit FROM clauses are specified, use only those
-    if (fromGraphs.length > 0 || fromNamedGraphs.length > 0) {
-      const allFromGraphs = [...fromGraphs, ...fromNamedGraphs];
-      const resolvedGraphs: string[] = [];
-
-      for (const graphUri of allFromGraphs) {
-        const resolved = this.graphService.resolveVaultUri(graphUri);
-        resolvedGraphs.push(...resolved);
-      }
-
-      return resolvedGraphs;
-    }
-
-    // If no FROM clauses, use the current file's graph
-    const currentFileGraph = this.graphService.getGraphUriForFile(
-      query.location.file.path
-    );
-    // Always return the current file graph - lazy loading will handle loading it
-    return [currentFileGraph];
-  }
-
-  /**
-   * Convert N3 quads to turtle string
-   */
-  private async quadsToTurtle(quads: Quad[]): Promise<string> {
-    if (quads.length === 0) {
-      return '';
-    }
-
-    // Simple turtle serialization
-    // In a more complete implementation, you'd use N3.js Writer
-    const lines: string[] = [];
-
-    for (const quad of quads) {
-      const subject = this.formatTerm(quad.subject);
-      const predicate = this.formatTerm(quad.predicate);
-      const object = this.formatTerm(quad.object);
-
-      lines.push(`${subject} ${predicate} ${object} .`);
-    }
-
-    return lines.join('\n');
+    // Use pure function for result formatting
+    return formatAskResults(result);
   }
 
   /**
@@ -609,12 +552,18 @@ export class QueryExecutorService {
     const parseTimeMs = Date.now() - parseStartTime;
     const graphResolutionStartTime = Date.now();
 
-    // Determine target graphs
-    const targetGraphs = this.determineTargetGraphs(query);
+    // Determine target graphs using pure planning functions
+    const targetGraphs = determineTargetGraphs(
+      query.context.fromGraphs,
+      query.context.fromNamedGraphs,
+      query.location.file.path,
+      (uri: string) => this.graphService.resolveVaultUri(uri),
+      (filePath: string) => this.graphService.getGraphUriForFile(filePath)
+    );
     const graphResolutionTimeMs = Date.now() - graphResolutionStartTime;
 
     // Get graphs and collect basic information
-    const graphs = await this.graphService.getGraphs(targetGraphs);
+    const graphs = await this.graphService.getGraphs([...targetGraphs]);
     const usedGraphs = graphs.map(graph => ({
       uri: graph.uri,
       filePath: graph.filePath,
@@ -779,82 +728,6 @@ export class QueryExecutorService {
         return 4; // Just a boolean
       default:
         return 0;
-    }
-  }
-
-  /**
-   * Convert a Comunica binding object to our processed binding format
-   */
-  private processBinding(binding: unknown): Record<string, ProcessedBinding> {
-    const bindingObj: Record<string, ProcessedBinding> = {};
-    const comunicaBinding = binding as ComunicaBinding;
-
-    if (!comunicaBinding?.entries) {
-      return bindingObj;
-    }
-
-    // Handle Immutable.js Map (used by Comunica)
-    if (this.isComunicaBindingEntries(comunicaBinding.entries)) {
-      for (const [variable, term] of comunicaBinding.entries.entrySeq()) {
-        const varName = variable.value || variable.toString();
-        bindingObj[varName] = this.formatTermForBinding(term);
-      }
-    } else if (comunicaBinding.entries instanceof Map) {
-      // Standard JavaScript Map
-      for (const [variable, term] of comunicaBinding.entries.entries()) {
-        bindingObj[variable] = this.formatTermForBinding(term);
-      }
-    } else if (typeof comunicaBinding.entries === 'object') {
-      // Plain object fallback
-      for (const [varName, term] of Object.entries(comunicaBinding.entries)) {
-        if (term && typeof term === 'object' && 'value' in term) {
-          bindingObj[varName] = this.formatTermForBinding(term);
-        }
-      }
-    }
-
-    return bindingObj;
-  }
-
-  /**
-   * Type guard for Comunica binding entries
-   */
-  private isComunicaBindingEntries(
-    entries: ComunicaBindingEntries | Map<string, Term> | Record<string, Term>
-  ): entries is ComunicaBindingEntries {
-    return (
-      typeof entries === 'object' &&
-      'size' in entries &&
-      'entrySeq' in entries &&
-      typeof entries.entrySeq === 'function'
-    );
-  }
-
-  /**
-   * Format an N3.js Term for our binding result format
-   */
-  private formatTermForBinding(term: Term): ProcessedBinding {
-    return {
-      type: this.getTermType(term),
-      value: term.value,
-      datatype: 'datatype' in term ? term.datatype?.value : undefined,
-      language: 'language' in term ? term.language : undefined,
-    };
-  }
-
-  /**
-   * Get term type for binding results using N3.js term types
-   */
-  private getTermType(term: Term): string {
-    switch (term.termType) {
-      case 'NamedNode':
-        return 'uri';
-      case 'BlankNode':
-        return 'bnode';
-      case 'Literal':
-        return 'literal';
-      default:
-        return 'unknown';
     }
   }
 

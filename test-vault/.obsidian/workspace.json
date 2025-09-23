@@ -196,11 +196,11 @@
       "bases:Create new base": false
     }
   },
-  "active": "9cd4d9c3cad6c7d4",
+  "active": "b98252733fb73756",
   "lastOpenFiles": [
-    "people/alice.md",
     "hellboy-universe.md",
     "hellboy-queries.md",
+    "people/alice.md",
     "steve.md",
     "cache-testing.md",
     "vault-wide-test.md",

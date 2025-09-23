@@ -104,3 +104,13 @@ SELECT ?parent ?child ?parentSpecies ?childSpecies WHERE {
                :species ?childSpecies .
 }
 ```
+
+```sparql
+# @view table
+select *
+FROM <vault://hellboy-universe.md>
+WHERE {
+  ?s ?p ?o .
+}
+LIMIT 5
+```
