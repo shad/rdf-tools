@@ -1,4 +1,4 @@
-import { Store } from 'n3';
+import { Store, Parser } from 'n3';
 import { TFile, App } from 'obsidian';
 import { Graph } from '../models/Graph';
 import { MarkdownGraphParser } from './MarkdownGraphParser';
@@ -176,21 +176,41 @@ export class GraphService {
       const content = await this.app.vault.read(file);
       const baseUri = this.generateBaseUri(filePath);
 
-      const parser = new MarkdownGraphParser({
-        baseUri,
-        prefixes: this.prefixService.getGlobalPrefixes(),
-      });
-
-      const parseResult = await parser.parse(content);
-      if (!parseResult.success) {
-        console.error(`Failed to parse graph ${graphUri}:`, parseResult.errors);
-        return null;
-      }
-
       const store = new Store();
-      if (parseResult.quads.length > 0) {
-        // Add quads to the default graph
-        store.addQuads(parseResult.quads);
+      let tripleCount = 0;
+
+      if (filePath.endsWith('.ttl')) {
+        // Parse pure turtle file using N3 Parser
+        const parser = new Parser({
+          baseIRI: baseUri,
+          blankNodePrefix: '_:b',
+        });
+
+        const quads = parser.parse(content);
+        if (quads.length > 0) {
+          store.addQuads(quads);
+          tripleCount = quads.length;
+        }
+      } else {
+        // Parse markdown file with turtle code blocks
+        const markdownParser = new MarkdownGraphParser({
+          baseUri,
+          prefixes: this.prefixService.getGlobalPrefixes(),
+        });
+
+        const parseResult = await markdownParser.parse(content);
+        if (!parseResult.success) {
+          console.error(
+            `Failed to parse graph ${graphUri}:`,
+            parseResult.errors
+          );
+          return null;
+        }
+
+        if (parseResult.quads.length > 0) {
+          store.addQuads(parseResult.quads);
+          tripleCount = parseResult.quads.length;
+        }
       }
 
       return {
@@ -198,7 +218,7 @@ export class GraphService {
         filePath,
         store,
         lastModified: new Date(),
-        tripleCount: parseResult.quads.length,
+        tripleCount,
       };
     } catch (error) {
       console.error(`Error loading graph ${graphUri}:`, error);

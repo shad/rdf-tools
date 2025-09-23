@@ -27,8 +27,8 @@ LIMIT 5
 
 ```sparql
 SELECT (COUNT(*) as ?count)
-FROM <vault://>
-where { ?s ?p ?o . }
+FROM <vault://events/>
+WHERE { ?s ?p ?o . }
 ```
 
 | test | foo  |     |

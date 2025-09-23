@@ -14,6 +14,7 @@ import {
   determineTargetGraphs,
   validateQueryPlan,
   getRequiredGraphUris,
+  GraphLoadSpec,
 } from '../utils/planning';
 
 /**
@@ -138,27 +139,79 @@ export class QueryExecutorService {
         graphMap.set(graph.uri, graph);
       }
 
-      // Process each graph specification from the plan
-      for (const spec of plan.graphSpecs) {
-        const graph = graphMap.get(spec.uri);
-        if (graph) {
-          const quads = graph.store.getQuads(null, null, null, null);
+      // Group specs by their source FROM graph for proper aggregation
+      const fromGraphGroups = new Map<string, GraphLoadSpec[]>();
 
-          if (plan.strategy === 'default') {
-            // Default strategy: Add to default graph (no graph identifier)
-            for (const quad of quads) {
-              combinedStore.addQuad(quad.subject, quad.predicate, quad.object);
+      // For default strategy, use a single group
+      if (plan.strategy === 'default') {
+        fromGraphGroups.set('default', [...plan.graphSpecs]);
+      } else {
+        // Group specs by the original FROM/FROM NAMED graph they came from
+        for (const spec of plan.graphSpecs) {
+          // Find which original FROM graph this spec came from
+          let originalGraphUri = spec.uri;
+
+          // Check if this spec came from resolving a vault:// URI
+          if (spec.source === 'from') {
+            for (const fromGraph of plan.originalFromGraphs) {
+              const resolved = this.graphService.resolveVaultUri(fromGraph);
+              if (resolved.includes(spec.uri)) {
+                originalGraphUri = fromGraph;
+                break;
+              }
             }
-          } else {
-            // FROM and FROM NAMED: Add with graph URI so Comunica can find them
-            const graphNode = DataFactory.namedNode(spec.uri);
+          } else if (spec.source === 'from_named') {
+            for (const fromNamedGraph of plan.originalFromNamedGraphs) {
+              const resolved =
+                this.graphService.resolveVaultUri(fromNamedGraph);
+              if (resolved.includes(spec.uri)) {
+                originalGraphUri = fromNamedGraph;
+                break;
+              }
+            }
+          }
+
+          if (!fromGraphGroups.has(originalGraphUri)) {
+            fromGraphGroups.set(originalGraphUri, []);
+          }
+          fromGraphGroups.get(originalGraphUri)!.push(spec);
+        }
+      }
+
+      // Process each group
+      for (const [originalGraphUri, specs] of fromGraphGroups.entries()) {
+        const isDefaultStrategy = originalGraphUri === 'default';
+
+        // Determine the target graph identifier
+        let targetGraphNode: ReturnType<typeof DataFactory.namedNode> | null =
+          null;
+        if (!isDefaultStrategy) {
+          targetGraphNode = DataFactory.namedNode(originalGraphUri);
+        }
+
+        // Add all quads from this group to the target graph
+        for (const spec of specs) {
+          const graph = graphMap.get(spec.uri);
+          if (graph) {
+            const quads = graph.store.getQuads(null, null, null, null);
+
             for (const quad of quads) {
-              combinedStore.addQuad(
-                quad.subject,
-                quad.predicate,
-                quad.object,
-                graphNode
-              );
+              if (isDefaultStrategy) {
+                // Default strategy: Add to default graph (no graph identifier)
+                combinedStore.addQuad(
+                  quad.subject,
+                  quad.predicate,
+                  quad.object
+                );
+              } else {
+                // FROM/FROM NAMED: Add to the original graph URI (e.g., vault://)
+                combinedStore.addQuad(
+                  quad.subject,
+                  quad.predicate,
+                  quad.object,
+                  targetGraphNode!
+                );
+              }
             }
           }
         }
