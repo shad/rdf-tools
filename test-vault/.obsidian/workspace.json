@@ -92,7 +92,8 @@
       }
     ],
     "direction": "horizontal",
-    "width": 300
+    "width": 300,
+    "collapsed": true
   },
   "right": {
     "id": "4955c44f83b034db",
@@ -183,7 +184,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 490.5
+    "width": 432.5
   },
   "left-ribbon": {
     "hiddenItems": {
@@ -196,10 +197,10 @@
       "bases:Create new base": false
     }
   },
-  "active": "b98252733fb73756",
+  "active": "9cd4d9c3cad6c7d4",
   "lastOpenFiles": [
-    "hellboy-universe.md",
     "hellboy-queries.md",
+    "hellboy-universe.md",
     "people/alice.md",
     "steve.md",
     "cache-testing.md",

@@ -197,19 +197,6 @@
   font-family: var(--font-monospace) !important;
 }
 
-.rdf-results-table td.rdf-uri {
-  color: var(--text-accent);
-}
-
-.rdf-results-table td.rdf-curie {
-  color: var(--text-accent);
-  font-weight: 500;
-}
-
-.rdf-results-table td.rdf-literal {
-  color: var(--text-normal);
-}
-
 .rdf-results-table td.rdf-bnode {
   color: var(--text-muted);
   font-style: italic;

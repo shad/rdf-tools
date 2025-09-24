@@ -142,7 +142,17 @@ export class PrefixService {
     let bestNamespace = '';
 
     for (const [prefix, namespace] of Object.entries(mergedPrefixes)) {
+      // Try with trailing slash first if namespace doesn't end with one and URI has slash
       if (
+        !namespace.endsWith('/') &&
+        uri.startsWith(namespace + '/') &&
+        (namespace + '/').length > bestNamespace.length
+      ) {
+        bestPrefix = prefix;
+        bestNamespace = namespace + '/';
+      }
+      // Then try exact match
+      else if (
         uri.startsWith(namespace) &&
         namespace.length > bestNamespace.length
       ) {

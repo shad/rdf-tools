@@ -17,6 +17,7 @@ WHERE {
 
 ```sparql
 # @view table
+prefix : <vault://hellboy-universe.md/>
 select *
 FROM <vault://hellboy-universe.md>
 WHERE {

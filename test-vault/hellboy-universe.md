@@ -107,10 +107,22 @@ SELECT ?parent ?child ?parentSpecies ?childSpecies WHERE {
 
 ```sparql
 # @view table
+PREFIX : <vault://hellboy-universe.md/>
 select *
-FROM <vault://hellboy-universe.md>
+FROM :
 WHERE {
   ?s ?p ?o .
 }
 LIMIT 5
 ```
+
+```sparql
+# @view table
+PREFIX : <vault://hellboy-universe.md/>
+select *
+WHERE {
+  ?s ?p ?o .
+}
+LIMIT 5
+```
+

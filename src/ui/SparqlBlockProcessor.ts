@@ -210,7 +210,11 @@ export class SparqlBlockProcessor extends Component {
 
     // Show query execution results
     if (queryResults) {
-      this.renderQueryResults(resultEl, queryResults, options);
+      // Extract query prefixes from parse result for use in rendering
+      const queryPrefixes = parseResult.success
+        ? parseResult.prefixes
+        : undefined;
+      this.renderQueryResults(resultEl, queryResults, options, queryPrefixes);
     }
   }
 
@@ -303,7 +307,8 @@ export class SparqlBlockProcessor extends Component {
   private renderQueryResults(
     el: HTMLElement,
     results: QueryResults,
-    options: RenderOptions
+    options: RenderOptions,
+    queryPrefixes?: Record<string, string>
   ): void {
     // Show loading state if executing
     if (results.status === 'executing') {
@@ -324,7 +329,7 @@ export class SparqlBlockProcessor extends Component {
 
     // Show successful results based on query type
     if (results.status === 'completed') {
-      this.renderCompletedQueryResults(el, results, options);
+      this.renderCompletedQueryResults(el, results, options, queryPrefixes);
     }
   }
 
@@ -334,13 +339,14 @@ export class SparqlBlockProcessor extends Component {
   private renderCompletedQueryResults(
     el: HTMLElement,
     results: QueryResults,
-    options: RenderOptions
+    options: RenderOptions,
+    queryPrefixes?: Record<string, string>
   ): void {
     const maxRows = options.maxResultRows || 100;
 
     switch (results.queryType) {
       case 'SELECT': {
-        this.renderSelectResults(el, results, maxRows);
+        this.renderSelectResults(el, results, maxRows, queryPrefixes);
         break;
       }
       case 'CONSTRUCT':
@@ -372,7 +378,8 @@ export class SparqlBlockProcessor extends Component {
   private renderSelectResults(
     el: HTMLElement,
     results: QueryResults,
-    maxRows: number
+    maxRows: number,
+    queryPrefixes?: Record<string, string>
   ): void {
     if (!results.bindings || results.bindings.length === 0) {
       const emptyEl = el.createDiv({ cls: 'rdf-result-empty' });
@@ -408,11 +415,13 @@ export class SparqlBlockProcessor extends Component {
         const tdEl = rowEl.createEl('td');
         const value = binding[variable];
         if (value) {
-          const formattedValue = this.formatRdfTerm(value);
+          const formattedValue = this.formatRdfTerm(value, queryPrefixes);
           tdEl.textContent = formattedValue.text;
 
           // Handle multiple CSS classes by splitting and adding individually
-          const cssClasses = formattedValue.cssClass.split(' ').filter(cls => cls.trim());
+          const cssClasses = formattedValue.cssClass
+            .split(' ')
+            .filter(cls => cls.trim());
           for (const cssClass of cssClasses) {
             tdEl.addClass(cssClass);
           }
@@ -468,12 +477,15 @@ export class SparqlBlockProcessor extends Component {
   /**
    * Format an RDF term for display
    */
-  private formatRdfTerm(term: {
-    type: string;
-    value: string;
-    datatype?: string;
-    language?: string;
-  }): { text: string; cssClass: string; title?: string } {
+  private formatRdfTerm(
+    term: {
+      type: string;
+      value: string;
+      datatype?: string;
+      language?: string;
+    },
+    queryPrefixes?: Record<string, string>
+  ): { text: string; cssClass: string; title?: string } {
     if (!term) return { text: '', cssClass: '' };
 
     switch (term.type) {
@@ -482,7 +494,12 @@ export class SparqlBlockProcessor extends Component {
         if (this.rdfService) {
           try {
             const prefixService = this.rdfService.getPrefixService();
-            const prefixContext = prefixService.createPrefixContext();
+            // Create prefix context that includes query prefixes with highest precedence
+            const prefixContext = prefixService.createPrefixContext(
+              {}, // localPrefixes (file-level prefixes would go here)
+              queryPrefixes || {} // queryPrefixes have highest precedence
+            );
+
             const curie = prefixService.createCurie(term.value, prefixContext);
 
             if (curie) {
@@ -508,7 +525,11 @@ export class SparqlBlockProcessor extends Component {
           ? (uri: string) => {
               try {
                 const prefixService = this.rdfService!.getPrefixService();
-                const prefixContext = prefixService.createPrefixContext();
+                // Create prefix context that includes query prefixes with highest precedence
+                const prefixContext = prefixService.createPrefixContext(
+                  {}, // localPrefixes (file-level prefixes would go here)
+                  queryPrefixes || {} // queryPrefixes have highest precedence
+                );
                 return prefixService.createCurie(uri, prefixContext);
               } catch (error) {
                 return null;

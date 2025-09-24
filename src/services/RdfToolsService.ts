@@ -637,14 +637,21 @@ export class RdfToolsService extends Component {
 
       // Show loading state
       try {
+        // Create a proper parse result for the loading state that includes prefixes
+        const loadingParseResult = {
+          success: true,
+          queryType: 'SELECT',
+          error: undefined,
+          parseTimeMs: 0,
+          // Include the prefixes from the original query context
+          prefixes: queryInfo.query.context.prefixes,
+          fromGraphs: queryInfo.query.context.fromGraphs,
+          fromNamedGraphs: queryInfo.query.context.fromNamedGraphs,
+        };
+
         this.codeBlockProcessor.renderSparqlResult(
           queryInfo.container,
-          {
-            success: true,
-            queryType: 'SELECT',
-            error: undefined,
-            parseTimeMs: 0,
-          },
+          loadingParseResult,
           {
             status: 'executing',
             queryType: 'SELECT' as QueryResultsType,
@@ -661,14 +668,21 @@ export class RdfToolsService extends Component {
 
       // Update display with results
       try {
+        // Create a proper parse result that includes the original query prefixes
+        const parseResult = {
+          success: true,
+          queryType: results.queryType,
+          error: undefined,
+          parseTimeMs: 0,
+          // Include the prefixes from the original query context so CURIEs display correctly
+          prefixes: queryInfo.query.context.prefixes,
+          fromGraphs: queryInfo.query.context.fromGraphs,
+          fromNamedGraphs: queryInfo.query.context.fromNamedGraphs,
+        };
+
         this.codeBlockProcessor.renderSparqlResult(
           queryInfo.container,
-          {
-            success: true,
-            queryType: results.queryType,
-            error: undefined,
-            parseTimeMs: 0,
-          },
+          parseResult,
           results,
           {
             showDetailedErrors: this.settings.showDetailedErrors,
