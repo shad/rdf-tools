@@ -11,7 +11,7 @@ import { GraphService } from './GraphService';
 import { QueryExecutorService } from './QueryExecutorService';
 import { PrefixService } from './PrefixService';
 import { SparqlQueryTracker, SparqlQueryInfo } from './SparqlQueryTracker';
-import { CodeBlockProcessor } from '@/ui/CodeBlockProcessor';
+import { SparqlBlockProcessor } from '@/ui/SparqlBlockProcessor';
 import { RdfToolsSettings } from '@/models';
 import { QueryResultsType } from '@/models';
 import { SparqlQuery } from '@/models';
@@ -28,7 +28,7 @@ export class RdfToolsService extends Component {
   private queryExecutor: QueryExecutorService;
   private prefixService: PrefixService;
   private sparqlQueryTracker: SparqlQueryTracker;
-  private codeBlockProcessor: CodeBlockProcessor;
+  private codeBlockProcessor: SparqlBlockProcessor;
   private errorReporter: MarkdownErrorReporter;
 
   // Debouncing for file modifications
@@ -50,7 +50,7 @@ export class RdfToolsService extends Component {
     this.graphService = new GraphService(this.app, this.prefixService);
     this.queryExecutor = new QueryExecutorService(this.graphService);
     this.sparqlQueryTracker = new SparqlQueryTracker(this.graphService);
-    this.codeBlockProcessor = new CodeBlockProcessor(
+    this.codeBlockProcessor = new SparqlBlockProcessor(
       this.app,
       this.plugin,
       this

@@ -12,6 +12,7 @@ import {
 } from '@/services/SparqlParserService';
 import { QueryResults } from '@/models';
 import type { PrefixService } from '@/services/PrefixService';
+import { formatLiteralForDisplay } from '@/utils/literal-formatting';
 
 /**
  * Options for rendering code block results
@@ -28,15 +29,6 @@ export interface RenderOptions {
 }
 
 /**
- * Callback for turtle block processing
- */
-export type TurtleBlockCallback = (
-  source: string,
-  container: HTMLElement,
-  ctx: MarkdownPostProcessorContext
-) => Promise<void>;
-
-/**
  * Callback for SPARQL block processing
  */
 export type SparqlBlockCallback = (
@@ -46,10 +38,9 @@ export type SparqlBlockCallback = (
 ) => Promise<void>;
 
 /**
- * Handles the UI aspects of displaying turtle/SPARQL code blocks and their results
+ * Handles the UI aspects of displaying SPARQL code blocks and their results
  */
-export class CodeBlockProcessor extends Component {
-  private turtleCallback?: TurtleBlockCallback;
+export class SparqlBlockProcessor extends Component {
   private sparqlCallback?: SparqlBlockCallback;
 
   constructor(
@@ -58,13 +49,6 @@ export class CodeBlockProcessor extends Component {
     private rdfService?: { getPrefixService(): PrefixService }
   ) {
     super();
-  }
-
-  /**
-   * Set the callback for turtle block processing
-   */
-  setTurtleCallback(callback: TurtleBlockCallback): void {
-    this.turtleCallback = callback;
   }
 
   /**
@@ -426,7 +410,13 @@ export class CodeBlockProcessor extends Component {
         if (value) {
           const formattedValue = this.formatRdfTerm(value);
           tdEl.textContent = formattedValue.text;
-          tdEl.addClass(formattedValue.cssClass);
+
+          // Handle multiple CSS classes by splitting and adding individually
+          const cssClasses = formattedValue.cssClass.split(' ').filter(cls => cls.trim());
+          for (const cssClass of cssClasses) {
+            tdEl.addClass(cssClass);
+          }
+
           if (formattedValue.title) {
             tdEl.title = formattedValue.title;
           }
@@ -513,36 +503,31 @@ export class CodeBlockProcessor extends Component {
         };
 
       case 'literal': {
-        let text = `"${term.value}"`;
-        if (term.language) {
-          text += `@${term.language}`;
-        } else if (
-          term.datatype &&
-          term.datatype !== 'http://www.w3.org/2001/XMLSchema#string'
-        ) {
-          // Try to shorten datatype URI to CURIE
-          let datatypeText = `<${term.datatype}>`;
-          if (this.rdfService) {
-            try {
-              const prefixService = this.rdfService.getPrefixService();
-              const prefixContext = prefixService.createPrefixContext();
-              const curie = prefixService.createCurie(
-                term.datatype,
-                prefixContext
-              );
-              if (curie) {
-                datatypeText = curie;
+        // Create function to convert URIs to CURIEs if possible
+        const createCurie = this.rdfService
+          ? (uri: string) => {
+              try {
+                const prefixService = this.rdfService!.getPrefixService();
+                const prefixContext = prefixService.createPrefixContext();
+                return prefixService.createCurie(uri, prefixContext);
+              } catch (error) {
+                return null;
               }
-            } catch (error) {
-              // Fall back to full URI
             }
-          }
-          text += `^^${datatypeText}`;
-        }
+          : undefined;
+
+        // Use the new literal formatting utility
+        const literalDisplay = formatLiteralForDisplay(
+          term.value,
+          term.datatype,
+          term.language,
+          createCurie
+        );
 
         return {
-          text,
-          cssClass: 'rdf-literal',
+          text: literalDisplay.displayText,
+          cssClass: literalDisplay.cssClass,
+          title: literalDisplay.fullNotation, // Show full RDF notation in tooltip
         };
       }
 

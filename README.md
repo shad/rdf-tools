@@ -77,8 +77,7 @@ Each markdown file with turtle blocks becomes a named graph:
 Use relative URIs within files, absolute URIs across files:
 ```turtle
 @base <vault://people/contacts.md/> .
-:alice foaf:name "Alice" .          # becomes vault://people/contacts.md/alice
-<vault://projects/work.md/project1> foaf:name "Work Project" .  # absolute reference
+<alice> foaf:name "Alice" .          # becomes vault://people/contacts.md/alice
 ```
 
 ## Installation
@@ -88,19 +87,58 @@ Use relative URIs within files, absolute URIs across files:
 2. Browse and search for "RDF Tools"
 3. Install and enable the plugin
 
-### Manual Installation
+### Development Installation (Building from Source)
+
+Want to try the latest features or contribute to development? Here are several ways to install from source:
+
+#### Method 1: Clone and Build (Recommended for Testing)
+```bash
+# Navigate to your vault's plugins directory
+cd /path/to/your/vault/.obsidian/plugins
+
+# Clone the repository
+git clone https://github.com/shad/rdf-tools.git
+cd rdf-tools
+
+# Install dependencies and build
+npm install
+npm run build
+
+# Enable the plugin in Obsidian Settings → Community Plugins
+```
+
+#### Method 2: Development Setup (For Contributors)
+```bash
+# Clone to your preferred development location
+git clone https://github.com/shad/rdf-tools.git
+cd rdf-tools
+
+# Install dependencies
+npm install
+
+# Build the plugin
+npm run build
+
+# Create symlink to your vault (replace with your vault path)
+ln -s "$(pwd)" "/path/to/your/vault/.obsidian/plugins/rdf-tools"
+
+# Enable the plugin in Obsidian Settings → Community Plugins
+```
+
+#### Development Workflow
+- **Rebuild after changes**: `npm run build`
+- **Run tests**: `npm run test`
+- **Format and lint**: `npm run check-all`
+- **Development server**: `npm run dev` (watch mode)
+
+#### Requirements for Building
+- Node.js 18 or higher
+- npm (comes with Node.js)
+
+### Manual Installation (Plugin Store Release)
 1. Download the latest release from [GitHub Releases](https://github.com/shad/rdf-tools/releases)
 2. Extract to `vault/.obsidian/plugins/rdf-tools/`
 3. Enable in Settings → Community Plugins
-
-## Use Cases
-
-Perfect for:
-- 📚 **Personal Knowledge Management** - Link concepts, people, and ideas semantically
-- 🎓 **Research Notes** - Structure bibliographic data and citations
-- 🏢 **Project Documentation** - Track relationships between tasks, resources, and team members
-- 📊 **Data Analysis** - Query and analyze structured information in your notes
-- 🌐 **Semantic Web Exploration** - Learn RDF and SPARQL with real data
 
 ## Development
 
