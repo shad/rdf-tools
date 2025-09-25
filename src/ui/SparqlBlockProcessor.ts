@@ -183,14 +183,66 @@ export class SparqlBlockProcessor extends Component {
     queryResults?: QueryResults,
     options: RenderOptions = {}
   ): void {
-    const resultEl = container.querySelector(
-      '.rdf-sparql-result'
-    ) as HTMLElement;
+    console.debug('SparqlBlockProcessor: renderSparqlResult called', {
+      parseSuccess: parseResult.success,
+      queryResults: queryResults
+        ? {
+            status: queryResults.status,
+            queryType: queryResults.queryType,
+            resultCount: queryResults.resultCount,
+            hasBindings: !!queryResults.bindings,
+            bindingsLength: queryResults.bindings?.length,
+            error: queryResults.error,
+          }
+        : null,
+      container: container,
+      containerClasses: container.className,
+    });
+
+    let resultEl = container.querySelector('.rdf-sparql-result') as HTMLElement;
+
+    // If the result element doesn't exist, try to find or create it
     if (!resultEl) {
-      console.warn(
-        'CodeBlockProcessor: Could not find .rdf-sparql-result element'
+      console.debug(
+        'SparqlBlockProcessor: .rdf-sparql-result element not found, attempting to create'
       );
-      return;
+
+      // Try a more conservative approach: look for any existing structure we can use
+      let resultsContainer = container.querySelector(
+        '.rdf-sparql-results-container'
+      ) as HTMLElement;
+
+      // If no results container exists, create the minimal needed structure
+      if (!resultsContainer) {
+        console.debug(
+          'SparqlBlockProcessor: Creating results container structure'
+        );
+
+        // Create results container - append to whatever container structure exists
+        resultsContainer = container.ownerDocument.createElement('div');
+        resultsContainer.classList.add('rdf-sparql-results-container');
+
+        // Just append to the main container - don't try to reorganize existing structure
+        container.appendChild(resultsContainer);
+      }
+
+      // Create the result element
+      console.debug(
+        'SparqlBlockProcessor: Creating .rdf-sparql-result element'
+      );
+      resultEl = container.ownerDocument.createElement('div');
+      resultEl.classList.add('rdf-sparql-result');
+      resultsContainer.appendChild(resultEl);
+
+      console.debug('SparqlBlockProcessor: Created result element structure', {
+        container: container.className,
+        resultsContainer: resultsContainer.className,
+        resultEl: resultEl.className,
+      });
+    } else {
+      console.debug(
+        'SparqlBlockProcessor: Using existing .rdf-sparql-result element'
+      );
     }
 
     // Clear previous results
@@ -210,11 +262,28 @@ export class SparqlBlockProcessor extends Component {
 
     // Show query execution results
     if (queryResults) {
+      console.debug('SparqlBlockProcessor: Rendering query results');
       // Extract query prefixes from parse result for use in rendering
       const queryPrefixes = parseResult.success
         ? parseResult.prefixes
         : undefined;
       this.renderQueryResults(resultEl, queryResults, options, queryPrefixes);
+    } else {
+      console.debug('SparqlBlockProcessor: No query results to render');
+    }
+
+    // Fallback: ensure we always show something if the element is empty
+    if (resultEl.children.length === 0 && resultEl.textContent?.trim() === '') {
+      console.warn(
+        'SparqlBlockProcessor: Result element is empty, adding fallback content'
+      );
+      const fallbackEl = resultEl.createDiv({ cls: 'rdf-result-fallback' });
+      fallbackEl.textContent = parseResult.success
+        ? 'Query parsed successfully but no results displayed'
+        : 'Query parsing completed';
+      fallbackEl.style.padding = '10px';
+      fallbackEl.style.color = '#999';
+      fallbackEl.style.fontStyle = 'italic';
     }
   }
 
@@ -319,18 +388,51 @@ export class SparqlBlockProcessor extends Component {
 
     // Show execution error
     if (results.status === 'error') {
+      console.debug('SparqlBlockProcessor: Rendering error results', {
+        error: results.error,
+        status: results.status,
+        queryType: results.queryType,
+      });
+
       const errorEl = el.createDiv({ cls: 'rdf-result-error' });
       const icon = errorEl.createSpan({ cls: 'rdf-result-icon' });
       icon.innerHTML = '✗';
       const message = errorEl.createSpan({ cls: 'rdf-result-message' });
       message.textContent = results.error || 'Query execution failed';
+
+      // Add some basic styling to ensure visibility
+      errorEl.style.padding = '10px';
+      errorEl.style.backgroundColor = '#fef2f2';
+      errorEl.style.border = '1px solid #fecaca';
+      errorEl.style.borderRadius = '4px';
+      errorEl.style.color = '#991b1b';
+
+      console.debug('SparqlBlockProcessor: Error element created', errorEl);
       return;
     }
 
     // Show successful results based on query type
     if (results.status === 'completed') {
+      console.debug('SparqlBlockProcessor: Rendering completed query results');
       this.renderCompletedQueryResults(el, results, options, queryPrefixes);
+    } else {
+      console.warn('SparqlBlockProcessor: Unexpected query results status', {
+        status: results.status,
+        queryType: results.queryType,
+      });
+
+      // Fallback for unexpected status
+      const unexpectedEl = el.createDiv({ cls: 'rdf-result-unexpected' });
+      unexpectedEl.textContent = `Query status: ${results.status}`;
+      unexpectedEl.style.padding = '10px';
+      unexpectedEl.style.color = '#666';
+      unexpectedEl.style.fontStyle = 'italic';
     }
+
+    console.debug(
+      'SparqlBlockProcessor: renderQueryResults completed, element children:',
+      el.children.length
+    );
   }
 
   /**
@@ -381,9 +483,45 @@ export class SparqlBlockProcessor extends Component {
     maxRows: number,
     queryPrefixes?: Record<string, string>
   ): void {
-    if (!results.bindings || results.bindings.length === 0) {
+    console.debug('SparqlBlockProcessor: renderSelectResults called', {
+      bindings: results.bindings,
+      bindingsLength: results.bindings?.length,
+      bindingsType: typeof results.bindings,
+      resultCount: results.resultCount,
+      status: results.status,
+      queryType: results.queryType,
+    });
+
+    // Handle various empty result cases more robustly
+    const hasNoResults =
+      !results.bindings ||
+      results.bindings.length === 0 ||
+      results.resultCount === 0;
+
+    if (hasNoResults) {
+      console.debug('SparqlBlockProcessor: Rendering empty results message');
       const emptyEl = el.createDiv({ cls: 'rdf-result-empty' });
       emptyEl.textContent = 'No results';
+
+      // Add some basic styling to ensure visibility
+      emptyEl.style.padding = '10px';
+      emptyEl.style.fontSize = '14px';
+      emptyEl.style.color = '#666';
+      emptyEl.style.fontStyle = 'italic';
+      emptyEl.style.textAlign = 'center';
+
+      console.debug(
+        'SparqlBlockProcessor: Empty results element created',
+        emptyEl
+      );
+      return;
+    }
+
+    // At this point we know results.bindings exists and has length > 0
+    if (!results.bindings || results.bindings.length === 0) {
+      console.error(
+        'SparqlBlockProcessor: Unexpected state - should have results but bindings is empty'
+      );
       return;
     }
 

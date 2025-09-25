@@ -14,7 +14,7 @@ export class MockTFile {
   extension: string;
   stat: { mtime: number; ctime: number; size: number };
 
-  constructor(path: string) {
+  constructor(path: string, options: { size?: number; mtime?: number; ctime?: number } = {}) {
     this.path = path;
     this.name = path.split('/').pop() || '';
     this.extension = this.name.includes('.')
@@ -22,10 +22,29 @@ export class MockTFile {
       : '';
     this.basename = this.name.replace(`.${this.extension}`, '');
     this.stat = {
-      mtime: Date.now(),
-      ctime: Date.now(),
-      size: 0,
+      mtime: options.mtime || Date.now(),
+      ctime: options.ctime || Date.now(),
+      size: options.size || 0,
     };
+  }
+}
+
+// Mock Obsidian's TFolder class for testing
+export class MockTFolder {
+  vault: Vault;
+  parent: TFolder;
+  path: string;
+  name: string;
+  children: any[];
+
+  constructor(path: string, children: any[] = []) {
+    this.path = path;
+    this.name = path.split('/').pop() || '';
+    this.children = children;
+  }
+
+  isRoot(): boolean {
+    return false; // Default to false, can be overridden if needed
   }
 }
 

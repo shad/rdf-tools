@@ -1,11 +1,30 @@
 import { defineConfig } from 'vitest/config';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { readFileSync } from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Plugin to handle ?text imports in vitest
+const textPlugin = {
+  name: 'text',
+  resolveId(id) {
+    if (id.endsWith('?text')) {
+      return id;
+    }
+  },
+  load(id) {
+    if (id.endsWith('?text')) {
+      const filePath = id.replace(/\?text$/, '');
+      const contents = readFileSync(filePath, 'utf8');
+      return `export default ${JSON.stringify(contents)};`;
+    }
+  },
+};
+
 export default defineConfig({
+  plugins: [textPlugin],
   test: {
     // Use happy-dom for DOM simulation (lighter than jsdom)
     environment: 'happy-dom',

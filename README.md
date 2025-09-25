@@ -65,6 +65,16 @@ WHERE {
 
 The results automatically update when you change the data in `contacts.md`!
 
+## Available Graphs
+
+RDF Tools provides multiple types of graphs you can query:
+
+- **📁 File Graphs** (`vault://file.md`) - Your RDF data from turtle blocks
+- **📊 Meta Graph** (`meta://`) - Vault structure, file metadata, word counts, links
+- **🏗️ Ontology Graph** (`meta://ontology`) - Schema definitions and vocabulary
+
+**→ [Complete Graph Documentation](docs/graphs.md)**
+
 ## How it works
 
 ### File = Graph
@@ -79,6 +89,16 @@ Use relative URIs within files, absolute URIs across files:
 @base <vault://people/contacts.md/> .
 <alice> foaf:name "Alice" .          # becomes vault://people/contacts.md/alice
 ```
+
+### Built-in Vocabulary
+
+RDF Tools includes a comprehensive ontology for describing vault structure:
+
+- **Classes**: `vault:Note`, `vault:Directory`, `vault:Attachment`, etc.
+- **Properties**: `vault:linksTo`, `vault:contains`, `vault:wordCount`, etc.
+- **Metadata**: File sizes, creation dates, link relationships
+
+**→ [Complete Ontology Documentation](docs/ontology.md)**
 
 ## Installation
 
@@ -160,6 +180,13 @@ Want to contribute? See [docs/development-notes.md](docs/development-notes.md) f
 - Query builder interface
 - Additional export formats
 - SHACL validation
+
+## Documentation
+
+- 📖 **[Available Graphs](docs/graphs.md)** - File graphs, meta graphs, and query patterns
+- 🏗️ **[Ontology Reference](docs/ontology.md)** - Built-in vocabulary and schema
+- 🏛️ **[Architecture](docs/architecture.md)** - Technical implementation details
+- 🔧 **[Development](docs/development-notes.md)** - Contributing and setup guide
 
 ## Support
 

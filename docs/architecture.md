@@ -2,483 +2,326 @@
 
 ## Overview
 
-RDF Tools is architected as a layered system that bridges Obsidian's file-based note-taking with semantic web technologies. The system transforms markdown files containing Turtle code blocks into a queryable knowledge graph while maintaining seamless integration with Obsidian's native workflows.
+RDF Tools is architected as a layered system that bridges Obsidian's file-based note-taking with semantic web technologies. The system transforms markdown files containing Turtle code blocks into queryable knowledge graphs while providing live-updating SPARQL query results and comprehensive meta-information about vault structure.
 
 ## Architectural Layers
 
-### 1. Obsidian Integration Layer
+### 1. Plugin Integration Layer
 
 **Purpose**: Interface between the plugin and Obsidian's APIs
 
 **Components**:
 - `RdfToolsPlugin` - Main plugin class handling lifecycle and coordination
-- `RdfToolsService` - Central orchestrating service that coordinates RDF processing
-- `CodeBlockProcessor` - Renders SPARQL query results in place of code blocks
-- `RdfToolsSettingsTab` - User configuration interface
-- `SparqlQueryDetailsModal` - Modal for detailed query analysis
+- `main.ts` - Plugin entry point and initialization
 
 **Responsibilities**:
 - Plugin lifecycle management (load/unload)
-- File system event handling
-- UI rendering and user interaction
-- Settings persistence
-- Integration with Obsidian's workspace and editor
+- Service initialization and dependency injection
+- Integration with Obsidian's plugin system
 
-### 2. Application Service Layer
+### 2. UI Layer
+
+**Purpose**: User interface components and rendering
+
+**Components**:
+- `SparqlBlockProcessor` - Renders SPARQL query results within code blocks
+- `RdfToolsSettingsTab` - User configuration interface
+- `SparqlQueryDetailsModal` - Modal for detailed query analysis and debugging
+
+**Responsibilities**:
+- SPARQL result rendering (tables, turtle, boolean results)
+- Error display and user feedback
+- Settings management UI
+- Query debugging and inspection interfaces
+
+### 3. Application Service Layer
 
 **Purpose**: Core business logic and orchestration
 
 **Components**:
-- `RdfToolsService` - Central orchestrating service that coordinates all RDF processing
-- `MarkdownErrorReporter` - Handles error reporting in markdown files
-- `CodeBlockExtractorService` - Extracts code blocks from markdown content
-- `MarkdownGraphParser` - Parses markdown files to extract turtle blocks
+- `RdfToolsService` - Central orchestrating service coordinating all RDF processing
+- `SparqlQueryTracker` - Cross-file dependency tracking and live update coordination
+- `MarkdownErrorReporter` - Error reporting and user feedback
 
 **Responsibilities**:
-- Business logic coordination
-- Cross-service communication
-- Transaction management
+- Business logic coordination between all services
+- File change detection and processing
+- Live query update orchestration
 - Error handling and recovery
-- Performance optimization
+- Performance optimization through debouncing and caching
 
-### 3. RDF Processing Layer
+### 4. RDF Processing Layer
 
 **Purpose**: Core RDF and SPARQL functionality
 
 **Components**:
-- `GraphService` - Graph storage and manipulation
+- `GraphService` - High-level graph management and caching coordinator
+- `VaultGraphService` - Vault file-based graph loading and parsing
+- `MetaGraphService` - Meta-information graph generation (vault structure, file metadata)
 - `QueryExecutorService` - SPARQL query execution with Comunica engine
-- `SparqlQueryTracker` - Cross-file dependency tracking and live update coordination
-- `TurtleParserService` - Turtle syntax parsing and validation
+- `SparqlParserService` - SPARQL syntax parsing and validation
 - `PrefixService` - Namespace and prefix management
 
 **Responsibilities**:
-- RDF triple storage and retrieval
+- Graph loading, caching, and invalidation
 - SPARQL query parsing and execution
-- Cross-file dependency analysis and tracking
-- Live update coordination when data changes
-- Turtle syntax processing
-- Namespace resolution
-- Data validation and error reporting
+- Meta-information extraction and RDF generation
+- Namespace resolution and prefix management
+- Turtle syntax processing and validation
 
-### 4. Data Access Layer
+### 5. Data Processing Layer
 
-**Purpose**: Storage, caching, and persistence
+**Purpose**: Low-level data extraction and parsing
 
 **Components**:
-- `GraphService` - In-memory graph storage with lazy loading and caching
-- `N3 Store` - Triple storage using the N3.js library
-- `File System Integration` - Direct integration with Obsidian's file system
+- `MarkdownGraphParser` - Extracts and parses Turtle blocks from markdown
+- `CodeBlockExtractorService` - Extracts code blocks from markdown content
 
 **Responsibilities**:
-- In-memory triple storage and retrieval
-- Lazy loading of graphs from files
-- Graph caching and invalidation
-- File-to-graph URI mapping
+- Markdown content analysis and extraction
+- Turtle code block identification and parsing
+- Base URI resolution and RDF triple generation
+- Content change detection and incremental processing
+
+### 6. Model Layer
+
+**Purpose**: Data models and type definitions
+
+**Components**:
+- `Graph` - RDF graph representation
+- `TurtleBlock` - Turtle code block model with parsing metadata
+- `SparqlQuery` - SPARQL query representation with execution context
+- `QueryResults` - Query result formatting and display models
+- `QueryExecutionDetails` - Query performance and debugging information
+- `RdfToolsSettings` - Plugin configuration model
+
+### 7. Utility Layer
+
+**Purpose**: Shared utilities and helper functions
+
+**Components**:
+- `parsing.ts` - Pure parsing functions for SPARQL and Turtle
+- `results.ts` - Result formatting and display utilities
+- `literal-formatting.ts` - RDF literal display formatting
+- `planning.ts` - Query planning and optimization helpers
 
 ## Core Data Flow
 
 ### File Processing Pipeline
 
 ```
-Markdown File Change
+File Change Event (Obsidian)
         ↓
-    RdfToolsService (debounced)
+RdfToolsService.handleFileChange() (debounced 300ms)
         ↓
-    Extract & Parse Turtle Blocks
+CodeBlockExtractorService.extractBlocks()
         ↓
-    GraphService.invalidateGraph()
+MarkdownGraphParser.parse()
         ↓
-    SparqlQueryTracker.findQueriesDependingOnGraph()
+GraphService.invalidateGraph()
         ↓
-    Parallel Re-execution of Dependent Queries
+SparqlQueryTracker.findQueriesDependingOnGraph()
         ↓
-    DOM Container Recovery (if needed)
+Parallel Re-execution of Dependent Queries
         ↓
-    QueryExecutorService
-        ↓
-    Update SPARQL Results in UI
+SparqlBlockProcessor.renderSparqlResult()
 ```
 
-### Query Execution Pipeline
+### SPARQL Query Execution Pipeline
 
 ```
-SPARQL Code Block
+SPARQL Code Block Rendering
         ↓
-    SparqlParserService.parse()
+SparqlBlockProcessor.handleSparqlBlock()
         ↓
-    SparqlQueryTracker.registerQuery()
+SparqlParserService.parseQuery()
         ↓
-    Analyze FROM/FROM NAMED Dependencies
+SparqlQueryTracker.registerQuery() (dependency tracking)
         ↓
-    QueryExecutorService.determineTargetGraphs()
+QueryExecutorService.executeQuery()
         ↓
-    GraphService.getGraphs() (lazy loading)
+GraphService.getGraphs() (with caching)
         ↓
-    Construct SPARQL Dataset (default/named graphs)
+Comunica Query Engine Execution
         ↓
-    Comunica Engine Execution
+Result Formatting (by query type)
         ↓
-    Format Results by Query Type
-        ↓
-    Render in UI Container
+DOM Update with Results/Errors
 ```
 
-## Component Interactions
-
-### Service Dependencies
+### Graph Loading Pipeline
 
 ```
-RdfToolsService
-    ├── CodeBlockExtractorService
-    ├── TurtleParserService
-    ├── SparqlParserService
-    ├── GraphService
-    ├── QueryExecutorService
-    ├── PrefixService
-    ├── SparqlQueryTracker
-    ├── CodeBlockProcessor
-    └── MarkdownErrorReporter
+Graph Request (from SPARQL FROM clause)
+        ↓
+GraphService.getGraphs()
+        ↓
+Check Cache → Return if Available
+        ↓
+Route to Appropriate Service:
+├── VaultGraphService (vault:// URIs)
+├── MetaGraphService (meta:// URIs)
+        ↓
+Parse/Generate RDF Triples
+        ↓
+Store in N3 Store with Graph Context
+        ↓
+Cache for Future Use
+        ↓
+Return Graph Objects
+```
 
-QueryExecutorService
-    ├── GraphService
-    └── Comunica QueryEngine
+## Service Architecture
 
-SparqlQueryTracker
-    ├── App (for file operations)
-    └── SparqlQueryInfo (for dependency tracking)
+### Primary Service Dependencies
 
+```
+RdfToolsService (Central Coordinator)
+├── GraphService (Graph Management)
+│   ├── VaultGraphService (File-based graphs)
+│   │   ├── MarkdownGraphParser
+│   │   └── CodeBlockExtractorService
+│   └── MetaGraphService (Meta-information graphs)
+├── QueryExecutorService (SPARQL execution)
+│   └── GraphService (for data access)
+├── SparqlParserService (Query parsing)
+├── PrefixService (Namespace management)
+├── SparqlQueryTracker (Dependency tracking)
+└── MarkdownErrorReporter (Error handling)
+
+SparqlBlockProcessor (UI Component)
+├── RdfToolsService (for query execution)
+└── SparqlQueryDetailsModal (for debugging)
+```
+
+### Graph Service Architecture
+
+The GraphService acts as a coordinator that delegates to specialized services:
+
+```
 GraphService
-    ├── MarkdownGraphParser
-    ├── TurtleParserService
-    ├── PrefixService
-    └── N3 Store
-
-CodeBlockProcessor
-    ├── App (for Obsidian integration)
-    ├── Plugin (for registering processors)
-    └── PrefixService (for URI formatting)
+├── VaultGraphService (handles vault:// URIs)
+│   - Loads RDF from Turtle blocks in markdown files
+│   - Manages file-to-graph URI mapping
+│   - Handles incremental updates and caching
+│
+└── MetaGraphService (handles meta:// URIs)
+    ├── Metadata Graph (meta://)
+    │   - File system structure
+    │   - File metadata (size, dates, word counts)
+    │   - Wikilink relationships
+    │   - File type classifications
+    │
+    └── Ontology Graph (meta://ontology)
+        - RDF Tools vocabulary definitions
+        - Class and property schemas
+        - Built-in ontology for vault structure
 ```
 
-### Event Flow
+## Data Models
 
-**File Change Events**:
-1. RdfToolsService detects change (debounced)
-2. GraphService invalidates affected graph
-3. SparqlQueryTracker identifies dependent queries
-4. Parallel re-execution of affected queries
-5. DOM container recovery if needed
-6. UI updates with new results
+### Graph Model
+- **URI**: Unique identifier for the graph
+- **Store**: N3.js Store containing RDF triples
+- **File Path**: Associated file (empty for meta graphs)
+- **Last Modified**: Cache invalidation timestamp
+- **Triple Count**: Performance and debugging information
 
-**Query Registration Events**:
-1. User creates/modifies SPARQL block
-2. SparqlParserService parses and validates query
-3. SparqlQueryTracker registers query and analyzes dependencies
-4. QueryExecutorService executes query
-5. Results rendered in UI container
+### Turtle Block Model
+- **Content**: Raw turtle text content
+- **Location**: Position within markdown file
+- **Base URI**: Resolved base URI for relative references
+- **Parse Status**: Success/failure and error information
+- **Quad Count**: Generated RDF triples count
 
-**Live Update Events**:
-1. Turtle data change in File A triggers graph invalidation
-2. SparqlQueryTracker finds queries in Files B, C, D that depend on File A
-3. Queries re-execute in parallel with timeout protection
-4. DOM containers updated with fresh results
-
-## Graph Storage Architecture
-
-### Named Graph Organization
-
-Each markdown file becomes a named graph with URI: `<vault://path/to/file.md>`
-
-```
-Vault Root
-├── <vault://daily/2024-01-15.md>
-│   └── Triples from turtle blocks in daily note
-├── <vault://projects/alpha.md>
-│   └── Triples from project documentation
-└── <vault://people/contacts.md>
-    └── Triples from contact information
-```
-
-### URI Resolution Strategy
-
-**Base URI Assignment**:
-- Each file gets: `@base <vault://path/filename.md/>`
-- Relative URIs resolve within file context
-- Absolute URIs for cross-file references
-
-**Global vs Local Entities**:
-```turtle
-# Local entity (file-specific)
-<person/alice> a foaf:Person .
-
-# Global entity (vault-wide)
-<vault://people/alice> a foaf:Person .
-
-# External entity
-<https://example.com/alice> a foaf:Person .
-```
-
-### Graph Lifecycle Management
-
-**Creation**: New turtle blocks create/update graphs
-**Updates**: Incremental triple addition/removal
-**Deletion**: File deletion removes entire graph
-**Versioning**: Optional graph snapshots for undo/redo
-
-## Query Processing Architecture
-
-### Query Analysis Phase
-
-1. **Syntax Parsing** - Validate SPARQL syntax
-2. **Dependency Extraction** - Identify required graphs
-3. **Optimization** - Query rewriting and planning
-4. **Security Validation** - Prevent dangerous operations
-
-### Execution Context
-
-**Graph Selection**:
-- Explicit: `FROM <vault://specific/file.md>`
-- Implicit: Query against all graphs
-- Pattern-based: `FROM <vault://projects/*.md>`
-
-**Prefix Resolution**:
-- Global vault prefixes
-- File-specific prefixes
-- Query-local prefixes
-- Automatic conflict resolution
-
-### Result Processing
-
-**Format Options**:
-- Table (default for SELECT)
-- List (ordered results)
-- Count (aggregated results)
-- Graph (CONSTRUCT results)
-- Custom templates
-
-**Rendering Pipeline**:
-1. Raw SPARQL results
-2. Format-specific processing
-3. URI resolution for display
-4. Markdown generation
-5. Obsidian rendering
-
-## Live Update System Architecture
-
-### SparqlQueryTracker Service
-
-**Purpose**: Manages cross-file dependencies between SPARQL queries and turtle data sources.
-
-**Core Functionality**:
-- **Query Registration**: Tracks all active SPARQL queries across open files
-- **Dependency Analysis**: Analyzes FROM/FROM NAMED clauses to identify graph dependencies
-- **Live Updates**: Coordinates automatic query re-execution when dependencies change
-- **Container Management**: Maintains DOM container references for result updates
-
-**Key Data Structures**:
-```typescript
-interface SparqlQueryInfo {
-  id: string;                    // Unique query identifier
-  query: SparqlQuery;            // Parsed SPARQL query object
-  container: HTMLElement;        // DOM container for results
-  file: TFile;                   // File containing the query
-  dependentGraphs: string[];     // Graph URIs this query depends on
-  lastExecuted: Date;            // Execution timestamp
-  isExecuting: boolean;          // Execution state flag
-}
-```
-
-**Lookup Optimizations**:
-- `queriesByFile`: Map file paths to queries for file-based operations
-- `queriesByGraph`: Map graph URIs to dependent queries for change propagation
-- `queryById`: Fast query lookup by unique identifier
-
-### Dependency Analysis Process
-
-**FROM Clause Analysis**:
-1. Extract FROM and FROM NAMED clauses from parsed SPARQL
-2. Resolve `vault://` URIs using GraphService.resolveVaultUri()
-3. Handle directory patterns (e.g., `vault://folder/` → all files in folder)
-4. Default behavior: no FROM clauses = current file dependency only
-
-**Query Lifecycle Management**:
-1. **Registration**: Query registered when SPARQL block processed
-2. **Updates**: Dependencies re-analyzed when query content changes
-3. **Cleanup**: Query unregistered when file closed or block removed
-4. **Container Recovery**: DOM references updated after markdown re-rendering
-
-### Live Update Coordination
-
-**File Change Pipeline**:
-1. `RdfToolsService.onFileModified()` detects turtle data changes
-2. Debounced processing (300ms) to batch rapid changes
-3. `GraphService.invalidateGraph()` clears cached graph data
-4. `SparqlQueryTracker.findQueriesDependingOnGraph()` finds affected queries
-5. Parallel re-execution with timeout protection (10 seconds)
-6. DOM container recovery for stale references
-7. Fresh results rendered in UI
-
-**Performance Optimizations**:
-- **Debouncing**: Prevents excessive re-execution during rapid editing
-- **Parallel Processing**: Multiple queries execute simultaneously
-- **Container Recovery**: Handles Obsidian's DOM regeneration gracefully
-- **Lazy Loading**: Graphs loaded only when needed for queries
-
-### DOM Container Management
-
-**Challenge**: Obsidian regenerates markdown DOM when files change, invalidating stored container references.
-
-**Solution**:
-1. Detect stale containers using `document.body.contains()`
-2. Search for updated containers by matching query text
-3. Update container references in tracking maps
-4. Fallback to query unregistration if container not found
-
-**Container Search Strategy**:
-```typescript
-// Find SPARQL code blocks with matching query text
-const sparqlBlocks = viewContainer.querySelectorAll('[data-lang="sparql"]');
-// Locate result container following the code block
-const resultContainer = block.nextElementSibling;
-```
+### SPARQL Query Model
+- **Query Text**: Original SPARQL query string
+- **Parsed AST**: Parsed query structure
+- **FROM Graphs**: Explicit graph dependencies
+- **Execution Context**: File context and parameters
+- **Performance Metrics**: Execution time and result count
 
 ## Caching Strategy
 
-### Multi-Level Cache Architecture
+### Graph-Level Caching
+- **Key**: Graph URI (e.g., `vault://file.md`, `meta://`)
+- **Storage**: In-memory Map in GraphService
+- **Invalidation**: File change events, explicit invalidation
+- **Lazy Loading**: Graphs loaded on first query access
 
-**L1 Cache (Memory)**:
-- Recently accessed graphs
-- Frequent query results
-- Parsed query objects
-- Compiled prefix maps
+### Query Result Caching
+- **Scope**: Per-query results cached in DOM elements
+- **Invalidation**: When dependent graphs change
+- **Update Strategy**: Background re-execution with visual loading states
 
-**L2 Cache (Persistent)**:
-- Serialized graph data
-- Query result cache
-- Dependency mappings
-- Configuration snapshots
+### Meta Graph Caching
+- **Metadata Graph**: Invalidated on any file system change
+- **Ontology Graph**: Static, loaded once per session
+- **Performance**: Critical for responsive query execution
 
-**Cache Invalidation**:
-- Content-based (hash changes)
-- Time-based (TTL expiration)
-- Dependency-based (related data changes)
-- Manual (user-triggered refresh)
+## Performance Optimizations
 
-### Cache Key Strategy
+### Incremental Processing
+- **File Changes**: Only reprocess changed files
+- **Query Dependencies**: Only re-execute affected queries
+- **Turtle Block Parsing**: Skip unchanged blocks using content hashing
 
-```
-Graph Cache: hash(file-path + content-hash + prefix-context)
-Query Cache: hash(sparql-query + graph-dependencies + execution-context)
-Result Cache: hash(query-cache-key + format-options)
-```
+### Background Processing
+- **Debounced Updates**: 300ms delay for file changes
+- **Parallel Execution**: Multiple queries execute concurrently
+- **Non-blocking UI**: Loading states during query execution
 
-## Error Handling Architecture
-
-### Error Categories
-
-**Parsing Errors**:
-- Malformed Turtle syntax
-- Invalid SPARQL queries
-- Namespace resolution failures
-
-**Execution Errors**:
-- Query timeout
-- Memory exhaustion
-- Graph inconsistencies
-
-**System Errors**:
-- File system access
-- Network connectivity
-- Library compatibility
-
-### Error Recovery Strategy
-
-**Graceful Degradation**:
-- Continue processing valid blocks when some fail
-- Maintain partial functionality during errors
-- Provide meaningful error messages to users
-
-**Error Isolation**:
-- File-level error containment
-- Query-level error handling
-- Service-level exception boundaries
-
-## Performance Considerations
-
-### Scalability Factors
-
-**Graph Size**: Large numbers of triples per file
-**File Count**: Many files with turtle blocks
-**Query Complexity**: Complex SPARQL with joins
-**Update Frequency**: Rapid file modifications
-
-### Optimization Strategies
-
-**Lazy Loading**:
-- Load graphs on first access
-- Background processing for large operations
-- Incremental indexing
-
-**Query Optimization**:
-- Query plan caching
-- Selective graph loading
-- Result streaming for large datasets
-
-**Memory Management**:
-- Graph eviction policies
-- Configurable cache sizes
-- Background garbage collection
-
-## Security Architecture
-
-### Input Validation
-
-**SPARQL Injection Prevention**:
-- Query parsing and validation
-- Parameterized query support
-- Whitelist-based function filtering
-
-**Resource Protection**:
-- Query timeout enforcement
-- Memory usage limits
-- File system access restrictions
-
-### Data Isolation
-
-**Vault Boundaries**:
-- Restrict access to current vault only
-- No external file system access
-- Sandboxed query execution
+### Memory Management
+- **Query Timeouts**: Prevent runaway queries (configurable)
+- **Result Limits**: Truncate large result sets with warnings
+- **Graph Size Monitoring**: Track memory usage per graph
 
 ## Extension Points
 
-### Plugin Architecture
+### Custom Graph Sources
+- Implement graph loading interface
+- Register with GraphService for custom URI schemes
+- Handle caching and invalidation
 
-**Custom Functions**:
-- SPARQL function extensions
-- Result formatters
-- Graph processors
+### Custom Query Processors
+- Extend QueryExecutorService for specialized query types
+- Add custom result formatters
+- Integrate with existing caching system
 
-**Data Connectors**:
-- External SPARQL endpoints
-- File format importers
-- API integrations
+### Custom UI Components
+- Extend SparqlBlockProcessor for custom rendering
+- Add new modal components for specialized interfaces
+- Integrate with Obsidian's UI framework
 
-**UI Extensions**:
-- Custom result visualizations
-- Query builders
-- Graph explorers
+## Error Handling Strategy
 
-### Configuration System
+### Layered Error Recovery
+- **Parse Errors**: Individual turtle blocks fail gracefully
+- **Query Errors**: Syntax errors shown to user with helpful messages
+- **Graph Loading Errors**: Partial failures don't break entire queries
+- **System Errors**: Comprehensive logging for debugging
 
-**Performance Tuning**:
-- Cache sizes and policies
-- Query timeouts
-- Background processing settings
+### User Feedback
+- **Inline Errors**: Shown directly below relevant code blocks
+- **Performance Warnings**: Query timeout and memory warnings
+- **Debug Information**: Available through query details modal
+- **Recovery Guidance**: Actionable error messages with suggestions
 
-**Feature Toggles**:
-- Experimental features
-- Debug modes
-- Integration options
+## Testing Architecture
 
-This architecture provides a solid foundation for implementing RDF Tools while maintaining clear separation of concerns, testability, and extensibility for future enhancements.
+### Unit Testing
+- **Service Layer**: Isolated testing with mocked dependencies
+- **Model Layer**: Pure function and data structure testing
+- **Utility Layer**: Comprehensive testing of parsing and formatting functions
+
+### Integration Testing
+- **Service Interactions**: Real service interactions with controlled data
+- **End-to-End Flows**: Complete workflows from file change to UI update
+- **Graph Loading**: Real RDF parsing and query execution
+
+### Mock Strategy
+- **Obsidian APIs**: Comprehensive mocking of app, vault, and file system
+- **External Libraries**: Mock N3.js and Comunica at service boundaries
+- **File System**: MockTFile and MockTFolder for testing
+
+This architecture supports the plugin's core goals of providing seamless RDF integration with Obsidian while maintaining performance, extensibility, and robust error handling.

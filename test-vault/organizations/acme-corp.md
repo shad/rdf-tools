@@ -16,3 +16,9 @@ Technology company specializing in semantic web and AI solutions.
     ex:size "Medium" ;
     ex:website "https://acme-corp.example.org" .
 ```
+
+Work here:
+[[alice]]
+[[bob]]
+[[charlie]]
+[[diana]]

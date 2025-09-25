@@ -240,7 +240,9 @@ export class SparqlQueryFactory {
    */
   static createInitialContext(options: CreateSparqlQueryOptions): QueryContext {
     return {
-      baseUri: options.baseUri || `vault://${options.location.file.path}/`,
+      baseUri:
+        options.baseUri ||
+        `vault://${options.location.file.path.replace(/^\/+/, '')}/`,
       prefixes: options.prefixes || {},
       fromGraphs: [],
       fromNamedGraphs: [],

@@ -203,4 +203,28 @@ Key settings in `manifest.json`:
 - Use type assertions with proper types: `error as TurtleParseError` not `error as any`
 - Import proper types from dependencies rather than falling back to `any`
 
+## Named Graph Requirements
+
+**CRITICAL**: When SPARQL queries use `FROM <graph-uri>` or `FROM NAMED <graph-uri>`, the RDF data MUST be stored as quads with that specific graph context in the N3.js Store.
+
+### Correct Implementation:
+```typescript
+// SPARQL: FROM <meta://>
+// RDF: Must use quads with meta:// graph context
+store.addQuad(quad(subject, predicate, object, namedNode('meta://')));
+```
+
+### Incorrect Implementation:
+```typescript
+// SPARQL: FROM <meta://>
+// RDF: Triples in default graph (will return 0 results and may cause Comunica stream hanging)
+store.addQuad(quad(subject, predicate, object)); // Missing graph context
+```
+
+### Why This Matters:
+- Comunica treats N3.js Store quads with graph context as named graphs
+- SPARQL `FROM <uri>` queries only match quads with that specific graph context
+- Missing graph context results in empty results and potential stream hanging
+- Mixed graph queries (`FROM <graph1> FROM <graph2>`) require each graph to have proper context
+
 This project implements a sophisticated RDF processing system within Obsidian while maintaining clean architecture, comprehensive testing, and excellent developer experience.

@@ -1,5 +1,6 @@
 import esbuild from "esbuild";
 import process from "process";
+import { readFileSync } from "fs";
 
 const banner =
 `/*
@@ -10,12 +11,38 @@ if you want to view the source, please visit the github repository of this plugi
 
 const prod = (process.argv[2] === "production");
 
+// Plugin to handle ?text imports
+const textPlugin = {
+  name: 'text',
+  setup(build) {
+    build.onResolve({ filter: /\?text$/ }, args => {
+      const resolved = build.resolve(args.path.replace(/\?text$/, ''), {
+        resolveDir: args.resolveDir,
+        kind: args.kind
+      });
+      return resolved.then(result => ({
+        path: result.path + '?text',
+        namespace: 'text',
+      }));
+    });
+    build.onLoad({ filter: /.*/, namespace: 'text' }, args => {
+      const path = args.path.replace(/\?text$/, '');
+      const contents = readFileSync(path, 'utf8');
+      return {
+        contents: `export default ${JSON.stringify(contents)}`,
+        loader: 'js',
+      };
+    });
+  },
+};
+
 const context = await esbuild.context({
 	banner: {
 		js: banner,
 	},
 	entryPoints: ["src/main.ts"],
 	bundle: true,
+	plugins: [textPlugin],
 	external: [
 		"obsidian",
 		"electron",

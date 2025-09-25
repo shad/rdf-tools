@@ -1,0 +1,170 @@
+@prefix vault: <http://shadr.us/ns/rdf-tools/v1#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+
+# Core Classes
+vault:Resource a rdfs:Class ;
+    rdfs:label "Vault Resource" ;
+    rdfs:comment "Any resource within the vault" .
+
+vault:File a rdfs:Class ;
+    rdfs:subClassOf vault:Resource ;
+    rdfs:label "File" .
+
+vault:Directory a rdfs:Class ;
+    rdfs:subClassOf vault:Resource ;
+    rdfs:label "Directory" .
+
+vault:Note a rdfs:Class ;
+    rdfs:subClassOf vault:File ;
+    rdfs:label "Markdown Note" .
+
+vault:Attachment a rdfs:Class ;
+    rdfs:subClassOf vault:File ;
+    rdfs:label "Attachment" .
+
+# Link Classes
+vault:Link a rdfs:Class ;
+    rdfs:label "Link between resources" .
+
+vault:WikiLink a rdfs:Class ;
+    rdfs:subClassOf vault:Link ;
+    rdfs:label "Wiki-style [[link]]" .
+
+vault:ExternalLink a rdfs:Class ;
+    rdfs:subClassOf vault:Link ;
+    rdfs:label "External URL" .
+
+# Content Structure Classes
+vault:Section a rdfs:Class ;
+    rdfs:label "Document Section" .
+
+vault:Heading a rdfs:Class ;
+    rdfs:subClassOf vault:Section ;
+    rdfs:label "Heading" .
+
+vault:Paragraph a rdfs:Class ;
+    rdfs:label "Paragraph" .
+
+vault:ListItem a rdfs:Class ;
+    rdfs:label "List Item" .
+
+vault:TodoItem a rdfs:Class ;
+    rdfs:subClassOf vault:ListItem ;
+    rdfs:label "Todo Item" .
+
+vault:Tag a rdfs:Class ;
+    rdfs:label "Tag" .
+
+vault:Property a rdfs:Class ;
+    rdfs:label "Frontmatter Property" .
+
+# Core Properties
+vault:path a rdfs:Property ;
+    rdfs:domain vault:Resource ;
+    rdfs:range xsd:string ;
+    rdfs:label "File system path" .
+
+vault:name a rdfs:Property ;
+    rdfs:domain vault:Resource ;
+    rdfs:range xsd:string ;
+    rdfs:label "Resource name" .
+
+vault:created a rdfs:Property ;
+    rdfs:domain vault:Resource ;
+    rdfs:range xsd:dateTime ;
+    rdfs:label "Creation timestamp" .
+
+vault:modified a rdfs:Property ;
+    rdfs:domain vault:Resource ;
+    rdfs:range xsd:dateTime ;
+    rdfs:label "Last modified timestamp" .
+
+vault:size a rdfs:Property ;
+    rdfs:domain vault:File ;
+    rdfs:range xsd:integer ;
+    rdfs:label "File size in bytes" .
+
+# Relationship Properties
+vault:linksTo a rdfs:Property ;
+    rdfs:domain vault:Note ;
+    rdfs:range vault:Resource ;
+    rdfs:label "Links to another resource" .
+
+vault:backlinkedFrom a rdfs:Property ;
+    rdfs:domain vault:Resource ;
+    rdfs:range vault:Note ;
+    rdfs:label "Has backlink from" .
+
+vault:contains a rdfs:Property ;
+    rdfs:domain vault:Directory ;
+    rdfs:range vault:Resource ;
+    rdfs:label "Contains resource" .
+
+vault:parentDirectory a rdfs:Property ;
+    rdfs:domain vault:Resource ;
+    rdfs:range vault:Directory ;
+    rdfs:label "Parent directory" .
+
+vault:hasTag a rdfs:Property ;
+    rdfs:domain vault:Note ;
+    rdfs:range vault:Tag ;
+    rdfs:label "Has tag" .
+
+vault:hasProperty a rdfs:Property ;
+    rdfs:domain vault:Note ;
+    rdfs:range vault:Property ;
+    rdfs:label "Has frontmatter property" .
+
+# Content Structure Properties
+vault:hasSection a rdfs:Property ;
+    rdfs:domain vault:Note ;
+    rdfs:range vault:Section ;
+    rdfs:label "Has section" .
+
+vault:headingLevel a rdfs:Property ;
+    rdfs:domain vault:Heading ;
+    rdfs:range xsd:integer ;
+    rdfs:label "Heading level (1-6)" .
+
+vault:headingText a rdfs:Property ;
+    rdfs:domain vault:Heading ;
+    rdfs:range xsd:string ;
+    rdfs:label "Heading text content" .
+
+vault:hasTodoItem a rdfs:Property ;
+    rdfs:domain vault:Note ;
+    rdfs:range vault:TodoItem ;
+    rdfs:label "Has todo item" .
+
+vault:todoStatus a rdfs:Property ;
+    rdfs:domain vault:TodoItem ;
+    rdfs:range xsd:string ;
+    rdfs:label "Todo completion status" .
+
+vault:todoText a rdfs:Property ;
+    rdfs:domain vault:TodoItem ;
+    rdfs:range xsd:string ;
+    rdfs:label "Todo item text" .
+
+vault:lineNumber a rdfs:Property ;
+    rdfs:domain [rdfs:subClassOf vault:Section, vault:ListItem] ;
+    rdfs:range xsd:integer ;
+    rdfs:label "Line number in file" .
+
+# Metadata Properties
+vault:aliases a rdfs:Property ;
+    rdfs:domain vault:Note ;
+    rdfs:range xsd:string ;
+    rdfs:label "Alternative names/aliases" .
+
+vault:cssclass a rdfs:Property ;
+    rdfs:domain vault:Note ;
+    rdfs:range xsd:string ;
+    rdfs:label "CSS class for styling" .
+
+vault:wordCount a rdfs:Property ;
+    rdfs:domain vault:Note ;
+    rdfs:range xsd:integer ;
+    rdfs:label "Word count" .

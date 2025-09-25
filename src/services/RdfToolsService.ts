@@ -211,48 +211,53 @@ export class RdfToolsService extends Component {
         }
 
         // Execute the query
-        const results = await this.queryExecutor.executeQuery(query);
-
-        // Register query with tracker for live updates (after successful execution)
-        if (results.status === 'completed') {
-          this.sparqlQueryTracker.registerQuery(query, container, file);
-          if (this.settings.enableDebugLogging) {
-            console.log(
-              `RDF Tools: Registered SPARQL query for live updates in ${file.path}`
-            );
-          }
-        }
-
-        // Update display with results
         try {
-          this.codeBlockProcessor.renderSparqlResult(
-            container,
-            parseResult,
-            results,
-            {
-              showDetailedErrors: this.settings.showDetailedErrors,
-              showMetrics: this.settings.enableDebugLogging,
+          const results = await this.queryExecutor.executeQuery(query);
+
+          // Register query with tracker for live updates (after successful execution)
+          if (results.status === 'completed') {
+            this.sparqlQueryTracker.registerQuery(query, container, file);
+            if (this.settings.enableDebugLogging) {
+              console.log(
+                `RDF Tools: Registered SPARQL query for live updates in ${file.path}`
+              );
             }
-          );
-          console.log(
-            'RDF Tools: Successfully rendered SPARQL execution results'
-          );
-        } catch (renderError) {
-          console.error(
-            'RDF Tools: Error rendering SPARQL results:',
-            renderError
-          );
-          // Fallback: show basic error message
-          const resultEl = container.querySelector(
-            '.rdf-sparql-result'
-          ) as HTMLElement;
-          if (resultEl) {
-            resultEl.innerHTML = '';
-            const errorEl = resultEl.ownerDocument.createElement('div');
-            errorEl.className = 'rdf-result-error';
-            errorEl.textContent = `Render error: ${renderError instanceof Error ? renderError.message : 'Unknown error'}`;
-            resultEl.appendChild(errorEl);
           }
+
+          // Update display with results
+          try {
+            this.codeBlockProcessor.renderSparqlResult(
+              container,
+              parseResult,
+              results,
+              {
+                showDetailedErrors: this.settings.showDetailedErrors,
+                showMetrics: this.settings.enableDebugLogging,
+              }
+            );
+          } catch (renderError) {
+            console.error(
+              'RDF Tools: Error rendering SPARQL results:',
+              renderError
+            );
+            // Fallback: show basic error message
+            const resultEl = container.querySelector(
+              '.rdf-sparql-result'
+            ) as HTMLElement;
+            if (resultEl) {
+              resultEl.innerHTML = '';
+              const errorEl = resultEl.ownerDocument.createElement('div');
+              errorEl.className = 'rdf-result-error';
+              errorEl.textContent = `Render error: ${renderError instanceof Error ? renderError.message : 'Unknown error'}`;
+              resultEl.appendChild(errorEl);
+            }
+          }
+        } catch (executionError) {
+          console.error(
+            'RDF Tools: Query execution failed with exception:',
+            executionError
+          );
+          throw executionError;
         }
       }
     } catch (error) {
@@ -279,6 +284,8 @@ export class RdfToolsService extends Component {
     if (file.extension === 'md') {
       this.debouncedHandleFileModification(file);
     }
+    // Always invalidate metadata graph on any file modification
+    this.invalidateMetadataGraph();
   }
 
   /**
@@ -288,6 +295,8 @@ export class RdfToolsService extends Component {
     if (file.extension === 'md') {
       this.debouncedHandleFileModification(file);
     }
+    // Always invalidate metadata graph on any file creation
+    this.invalidateMetadataGraph();
   }
 
   /**
@@ -315,6 +324,8 @@ export class RdfToolsService extends Component {
         await this.reExecuteSparqlQuery(queryInfo);
       }
     }
+    // Always invalidate metadata graph on any file deletion
+    this.invalidateMetadataGraph();
   }
 
   /**
@@ -355,6 +366,8 @@ export class RdfToolsService extends Component {
       // Handle the new file as if it was modified (for new dependencies)
       await this.handleFileModificationWithDependencies(file);
     }
+    // Always invalidate metadata graph on any file rename
+    this.invalidateMetadataGraph();
   }
 
   /**
@@ -828,5 +841,33 @@ export class RdfToolsService extends Component {
     }
 
     return allPrefixes;
+  }
+
+  /**
+   * Invalidate metadata graph and update any dependent queries
+   */
+  private invalidateMetadataGraph(): void {
+    // Invalidate the metadata graph cache (now unified with all other graphs)
+    this.graphService.invalidateGraph('meta://');
+
+    // Find and re-execute any queries that depend on the metadata graph
+    const metaDependentQueries =
+      this.sparqlQueryTracker.findQueriesDependingOnGraph('meta://');
+
+    // Re-execute dependent queries asynchronously to avoid blocking file operations
+    if (metaDependentQueries.length > 0) {
+      setTimeout(async () => {
+        for (const queryInfo of metaDependentQueries) {
+          try {
+            await this.reExecuteSparqlQuery(queryInfo);
+          } catch (error) {
+            console.error(
+              'Error re-executing metadata-dependent query:',
+              error
+            );
+          }
+        }
+      }, 100); // Small delay to avoid blocking file operations
+    }
   }
 }

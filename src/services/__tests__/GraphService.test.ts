@@ -43,6 +43,10 @@ describe('GraphService', () => {
         read: vi.fn(),
         getMarkdownFiles: vi.fn().mockReturnValue([]),
         getFiles: vi.fn().mockReturnValue([]),
+        getAllLoadedFiles: vi.fn().mockReturnValue([]),
+      },
+      metadataCache: {
+        getFirstLinkpathDest: vi.fn(),
       },
     } as unknown as App;
 
@@ -433,6 +437,112 @@ describe('GraphService', () => {
       });
     });
 
+    describe('meta:// graph support', () => {
+      it('should load meta:// metadata graph', async () => {
+        const graphUri = 'meta://';
+
+        const graphs = await graphService.getGraphs([graphUri]);
+
+        expect(graphs).toHaveLength(1);
+        const graph = graphs[0];
+        expect(graph.uri).toBe('meta://');
+        expect(graph.filePath).toBe('');
+        expect(graph.store).toBeInstanceOf(Store);
+        expect(graph.lastModified).toBeInstanceOf(Date);
+      });
+
+      it('should load meta://ontology graph', async () => {
+        const graphUri = 'meta://ontology';
+
+        const graphs = await graphService.getGraphs([graphUri]);
+
+        expect(graphs).toHaveLength(1);
+        const graph = graphs[0];
+        expect(graph.uri).toBe('meta://ontology');
+        expect(graph.filePath).toBe('');
+        expect(graph.store).toBeInstanceOf(Store);
+        expect(graph.tripleCount).toBeGreaterThan(0);
+        expect(graph.lastModified).toBeInstanceOf(Date);
+      });
+
+      it('should cache meta:// graphs', async () => {
+        const graphUri = 'meta://';
+
+        // Load twice
+        const graphs1 = await graphService.getGraphs([graphUri]);
+        const graphs2 = await graphService.getGraphs([graphUri]);
+
+        expect(graphs2[0]).toBe(graphs1[0]); // Same object reference (cached)
+      });
+
+      it('should cache meta://ontology graphs', async () => {
+        const graphUri = 'meta://ontology';
+
+        // Load twice
+        const graphs1 = await graphService.getGraphs([graphUri]);
+        const graphs2 = await graphService.getGraphs([graphUri]);
+
+        expect(graphs2[0]).toBe(graphs1[0]); // Same object reference (cached)
+      });
+
+      it('should handle mixed vault:// and meta:// requests', async () => {
+        const vaultUri = 'vault://test.md';
+        const metaUri = 'meta://';
+        const ontologyUri = 'meta://ontology';
+
+        // Setup vault graph
+        setupMockSuccessfulParsing(['test content']);
+        (mockApp.vault.getAbstractFileByPath as any).mockReturnValue(new MockTFile('test.md'));
+        (mockApp.vault.read as any).mockResolvedValue('test content');
+
+        const graphs = await graphService.getGraphs([vaultUri, metaUri, ontologyUri]);
+
+        expect(graphs).toHaveLength(3);
+        expect(graphs[0].uri).toBe(vaultUri);
+        expect(graphs[1].uri).toBe(metaUri);
+        expect(graphs[2].uri).toBe(ontologyUri);
+      });
+
+      it('should invalidate meta:// graph cache', async () => {
+        const graphUri = 'meta://';
+
+        // Load and cache
+        await graphService.getGraphs([graphUri]);
+
+        // Invalidate
+        graphService.invalidateGraph(graphUri);
+
+        // Should reload on next request (can't easily test without internal access, but ensures no errors)
+        const graphs = await graphService.getGraphs([graphUri]);
+        expect(graphs).toHaveLength(1);
+      });
+
+      it('should resolve meta:// URI correctly', () => {
+        const result = graphService.resolveVaultUri('meta://');
+        expect(result).toEqual(['meta://']);
+      });
+
+      it('should resolve meta://ontology URI correctly', () => {
+        const result = graphService.resolveVaultUri('meta://ontology');
+        expect(result).toEqual(['meta://ontology']);
+      });
+
+      it('should handle meta:// graph alongside vault:// graphs in resolution', () => {
+        // Mock some vault files
+        const mockFiles = [new MockTFile('test.md')];
+        (mockApp.vault.getMarkdownFiles as any).mockReturnValue(mockFiles);
+        (mockApp.vault.getFiles as any).mockReturnValue(mockFiles);
+
+        // Test that non-meta URIs still work
+        const vaultResult = graphService.resolveVaultUri('vault://');
+        expect(vaultResult).toContain('vault://test.md');
+
+        // Test that meta URIs work
+        const metaResult = graphService.resolveVaultUri('meta://');
+        expect(metaResult).toEqual(['meta://']);
+      });
+    });
+
     describe('error scenarios', () => {
       it('should throw error when graph fails to load', async () => {
         const graphUri = 'vault://invalid.md';
@@ -482,7 +592,7 @@ describe('GraphService', () => {
         );
 
         expect(consoleSpy.error).toHaveBeenCalledWith(
-          'Failed to parse graph vault://invalid-turtle.md:',
+          'Failed to parse vault graph vault://invalid-turtle.md:',
           [{ error: 'Invalid turtle syntax' }]
         );
       });
@@ -498,7 +608,7 @@ describe('GraphService', () => {
         );
 
         expect(consoleSpy.error).toHaveBeenCalledWith(
-          'Error loading graph vault://unreadable.md:',
+          'Error loading vault graph vault://unreadable.md:',
           expect.any(Error)
         );
       });

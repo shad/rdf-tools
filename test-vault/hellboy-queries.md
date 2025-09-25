@@ -36,3 +36,12 @@ WHERE { ?s ?p ?o . }
 | ---- | ---- | --- |
 | bar  | baz  |     |
 | asdf | asdf |     |
+
+```sparql
+SELECT * 
+#FROM <vault://hellboy-universe.md>
+FROM <meta://>
+WHERE {
+?s a <DOESNOTEXIST>
+}
+```

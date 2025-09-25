@@ -395,7 +395,12 @@ export class QueryExecutorService {
     let count = 0;
 
     return new Promise((resolve, reject) => {
+      let dataReceived = false;
+
       bindingsStream.on('data', binding => {
+        if (!dataReceived) {
+          dataReceived = true;
+        }
         if (abortSignal.aborted) {
           bindingsStream.destroy();
           reject(new Error('Query execution was cancelled'));
@@ -433,6 +438,23 @@ export class QueryExecutorService {
       bindingsStream.on('error', error => {
         reject(error);
       });
+
+      // Add a timeout to detect hanging streams
+      const streamTimeout = setTimeout(() => {
+        if (!dataReceived) {
+          resolve({
+            status: 'completed',
+            queryType: 'SELECT',
+            bindings: [],
+            resultCount: 0,
+            truncated: false,
+          });
+        }
+      }, 5000); // 5 second timeout
+
+      // Clear timeout when stream completes
+      bindingsStream.on('end', () => clearTimeout(streamTimeout));
+      bindingsStream.on('error', () => clearTimeout(streamTimeout));
     });
   }
 

@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "hellboy-universe.md",
+                "file": "meta.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "hellboy-universe"
+              "title": "meta"
             }
           },
           {
@@ -171,13 +171,13 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "hellboy-queries.md",
+                "file": "meta.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "Outline of hellboy-queries"
+              "title": "Outline of meta"
             }
           }
         ]
@@ -200,8 +200,11 @@
   "active": "9cd4d9c3cad6c7d4",
   "lastOpenFiles": [
     "hellboy-queries.md",
-    "hellboy-universe.md",
+    "meta.md",
+    "ontology-test.md",
     "people/alice.md",
+    "organizations/acme-corp.md",
+    "hellboy-universe.md",
     "steve.md",
     "cache-testing.md",
     "vault-wide-test.md",
@@ -217,7 +220,6 @@
     "people/diana.md",
     "people/charlie.md",
     "people/bob.md",
-    "organizations/acme-corp.md",
     "events/semantic-web-meetup.md",
     "events",
     "projects",

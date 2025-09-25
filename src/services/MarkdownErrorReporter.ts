@@ -178,7 +178,7 @@ export class MarkdownErrorReporter {
       const defaultPrefixes = PrefixService.getCommonPrefixes();
 
       const parser = new MarkdownGraphParser({
-        baseUri: `vault://${encodeURIComponent(file.path)}`,
+        baseUri: `vault://${encodeURIComponent(file.path.replace(/^\/+/, ''))}`,
         prefixes: defaultPrefixes,
       });
 

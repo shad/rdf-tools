@@ -95,7 +95,7 @@ export class TurtleBlockFactory {
    * Generate base URI from file path
    */
   static generateBaseUri(filePath: string): string {
-    const normalizedPath = filePath.replace(/\\/g, '/');
+    const normalizedPath = filePath.replace(/\\/g, '/').replace(/^\/+/, '');
     return `vault://${normalizedPath}/`;
   }
 
