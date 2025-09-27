@@ -31,6 +31,7 @@ const consoleSpy = {
 describe('GraphService', () => {
   let graphService: GraphService;
   let mockMarkdownParser: { parse: ReturnType<typeof vi.fn> };
+  let mockLogger: any;
 
   beforeEach(async () => {
     // Reset all mocks
@@ -61,11 +62,22 @@ describe('GraphService', () => {
     mockMarkdownParser = { parse: vi.fn() };
     (MarkdownGraphParser as any).mockImplementation(() => mockMarkdownParser);
 
-    graphService = new GraphService(mockApp, mockPrefixService);
+    mockLogger = {
+      info: vi.fn(),
+      debug: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+      updateSettings: vi.fn(),
+    } as any;
+    graphService = new GraphService(mockApp, mockPrefixService, mockLogger);
   });
 
   afterEach(() => {
     consoleSpy.error.mockClear();
+    if (mockLogger) {
+      mockLogger.error.mockClear();
+      mockLogger.warn.mockClear();
+    }
   });
 
   describe('constructor', () => {
@@ -180,7 +192,14 @@ describe('GraphService', () => {
 
     it('should return empty array for root URI with empty cache', () => {
       // Create new service with empty cache
-      const emptyService = new GraphService(mockApp, mockPrefixService);
+      const mockLogger = {
+        info: vi.fn(),
+        debug: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        updateSettings: vi.fn(),
+      } as any;
+      const emptyService = new GraphService(mockApp, mockPrefixService, mockLogger);
       const result = emptyService.resolveVaultUri('vault://');
       expect(result).toEqual([]);
     });
@@ -554,7 +573,7 @@ describe('GraphService', () => {
           'Failed to load any graphs'
         );
 
-        expect(consoleSpy.error).toHaveBeenCalledWith(
+        expect(mockLogger.error).toHaveBeenCalledWith(
           'File not found: invalid.md'
         );
       });
@@ -566,7 +585,7 @@ describe('GraphService', () => {
           'Failed to load any graphs'
         );
 
-        expect(consoleSpy.error).toHaveBeenCalledWith(
+        expect(mockLogger.error).toHaveBeenCalledWith(
           'Cannot extract file path from graph URI: invalid-uri'
         );
       });
@@ -591,7 +610,7 @@ describe('GraphService', () => {
           'Failed to load any graphs'
         );
 
-        expect(consoleSpy.error).toHaveBeenCalledWith(
+        expect(mockLogger.error).toHaveBeenCalledWith(
           'Failed to parse vault graph vault://invalid-turtle.md:',
           [{ error: 'Invalid turtle syntax' }]
         );
@@ -607,7 +626,7 @@ describe('GraphService', () => {
           'Failed to load any graphs'
         );
 
-        expect(consoleSpy.error).toHaveBeenCalledWith(
+        expect(mockLogger.error).toHaveBeenCalledWith(
           'Error loading vault graph vault://unreadable.md:',
           expect.any(Error)
         );

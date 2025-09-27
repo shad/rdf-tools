@@ -3,9 +3,8 @@
 	"name": "RDF Tools",
 	"version": "1.0.0",
 	"minAppVersion": "0.15.0",
-	"description": "Work with RDF data and SPARQL queries directly in your vault. Extract turtle code blocks as knowledge graphs and query them with live-updating SPARQL results.",
+	"description": "Add semantic structure to your notes using RDF Turtle blocks and interactive SPARQL queries with live-updating results.",
 	"author": "Shad Reynolds",
-	"authorUrl": "https://github.com/shad",
-	"fundingUrl": "",
+	"authorUrl": "https://shadr.us",
 	"isDesktopOnly": true
 }

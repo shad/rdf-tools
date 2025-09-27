@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { QueryExecutorService } from '../QueryExecutorService';
 import { GraphService } from '../GraphService';
 import { PrefixService } from '../PrefixService';
@@ -60,7 +60,14 @@ describe('QueryExecutorService - FROM Clause Regression Tests', () => {
       },
     } as unknown as App;
 
-    graphService = new GraphService(mockApp, prefixService);
+    const mockLogger = {
+      info: vi.fn(),
+      debug: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+      updateSettings: vi.fn(),
+    } as any;
+    graphService = new GraphService(mockApp, prefixService, mockLogger);
     service = new QueryExecutorService(graphService);
   });
 

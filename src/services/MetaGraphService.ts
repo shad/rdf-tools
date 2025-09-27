@@ -2,6 +2,7 @@ import { Store, DataFactory, Parser } from 'n3';
 import { TFile, TAbstractFile, TFolder, App } from 'obsidian';
 import { Graph } from '../models/Graph';
 import { PrefixService } from './PrefixService';
+import { Logger } from '@/utils/Logger';
 import ontologyContent from '../../v1.ttl?text';
 
 const { namedNode, literal, quad } = DataFactory;
@@ -18,7 +19,8 @@ export class MetaGraphService {
 
   constructor(
     private app: App,
-    private prefixService: PrefixService
+    private prefixService: PrefixService,
+    private logger: Logger
   ) {}
 
   /**
@@ -189,7 +191,7 @@ export class MetaGraphService {
             )
           );
         } catch (error) {
-          console.warn(
+          this.logger.warn(
             `Could not read file ${file.path} for word count:`,
             error
           );
@@ -293,7 +295,7 @@ export class MetaGraphService {
           }
         }
       } catch (error) {
-        console.warn(`Could not analyze links in ${file.path}:`, error);
+        this.logger.warn(`Could not analyze links in ${file.path}:`, error);
       }
     }
   }

@@ -7,6 +7,8 @@ This file helps test cache invalidation when data changes. Make changes to other
 This query should update immediately when you modify people files:
 
 ```sparql
+PREFIX ex: <https://example.com/>
+
 SELECT ?person ?name ?dept ?project 
 FROM <vault://people/>
 WHERE {
@@ -22,6 +24,8 @@ ORDER BY ?dept ?name
 This query monitors project budgets and should update when project files change:
 
 ```sparql
+PREFIX ex: <https://example.com/>
+
 SELECT ?project ?name ?budget ?status 
 FROM <vault://projects/>
 WHERE {
@@ -37,6 +41,8 @@ ORDER BY DESC(?budget)
 Watch this update as you add/remove skills from people files:
 
 ```sparql
+PREFIX ex: <https://example.com/>
+
 SELECT ?skill (COUNT(?person) as ?peopleCount)
 FROM <vault://people/>
 WHERE {
@@ -51,6 +57,9 @@ ORDER BY DESC(?peopleCount) ?skill
 This vault-wide query should reflect all changes across directories:
 
 ```sparql
+PREFIX ex: <https://example.com/>
+PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+
 SELECT ?person ?personName ?projectName ?eventName WHERE {
     ?person foaf:name ?personName .
     OPTIONAL {

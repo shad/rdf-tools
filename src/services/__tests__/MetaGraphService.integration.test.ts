@@ -122,8 +122,15 @@ describe('MetaGraphService Integration Tests', () => {
       },
     } as unknown as App;
 
-    metaService = new MetaGraphService(mockApp, mockPrefixService);
-    graphService = new GraphService(mockApp, mockPrefixService);
+    const mockLogger = {
+      info: vi.fn(),
+      debug: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+      updateSettings: vi.fn(),
+    } as any;
+    metaService = new MetaGraphService(mockApp, mockPrefixService, mockLogger);
+    graphService = new GraphService(mockApp, mockPrefixService, mockLogger);
     queryService = new QueryExecutorService(graphService);
   });
 

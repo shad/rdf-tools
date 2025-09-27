@@ -1,5 +1,6 @@
 import { App, TFile } from 'obsidian';
 import { TurtleBlockError } from './MarkdownGraphParser';
+import { Logger } from '@/utils/Logger';
 
 /**
  * Service for reporting parsing errors in markdown files
@@ -8,7 +9,10 @@ export class MarkdownErrorReporter {
   private app: App;
   private errorContainers = new Map<string, HTMLElement[]>();
 
-  constructor(app: App) {
+  constructor(
+    app: App,
+    private logger: Logger
+  ) {
     this.app = app;
   }
 
@@ -29,9 +33,7 @@ export class MarkdownErrorReporter {
     });
 
     if (!targetLeaf) {
-      console.warn(
-        `MarkdownErrorReporter: Could not find view for file ${filePath}`
-      );
+      this.logger.warn(`Could not find view for file ${filePath}`);
       return;
     }
 
@@ -39,9 +41,7 @@ export class MarkdownErrorReporter {
     const contentEl = view.contentEl;
 
     if (!contentEl) {
-      console.warn(
-        `MarkdownErrorReporter: Could not find content element for file ${filePath}`
-      );
+      this.logger.warn(`Could not find content element for file ${filePath}`);
       return;
     }
 
@@ -180,6 +180,7 @@ export class MarkdownErrorReporter {
       const parser = new MarkdownGraphParser({
         baseUri: `vault://${encodeURIComponent(file.path.replace(/^\/+/, ''))}`,
         prefixes: defaultPrefixes,
+        logger: this.logger,
       });
 
       const result = await parser.parse(content);
@@ -190,10 +191,7 @@ export class MarkdownErrorReporter {
         this.clearErrors(file.path);
       }
     } catch (error) {
-      console.error(
-        `MarkdownErrorReporter: Error checking file ${file.path}:`,
-        error
-      );
+      this.logger.error(`Error checking file ${file.path}:`, error);
     }
   }
 }

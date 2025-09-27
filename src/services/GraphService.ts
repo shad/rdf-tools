@@ -3,6 +3,7 @@ import { Graph } from '../models/Graph';
 import { VaultGraphService } from './VaultGraphService';
 import { MetaGraphService } from './MetaGraphService';
 import { PrefixService } from './PrefixService';
+import { Logger } from '@/utils/Logger';
 
 /**
  * Orchestrating service that routes graph requests to appropriate specialized services
@@ -18,10 +19,11 @@ export class GraphService {
 
   constructor(
     private app: App,
-    private prefixService: PrefixService
+    private prefixService: PrefixService,
+    private logger: Logger
   ) {
-    this.vaultGraphService = new VaultGraphService(app, prefixService);
-    this.metaGraphService = new MetaGraphService(app, prefixService);
+    this.vaultGraphService = new VaultGraphService(app, prefixService, logger);
+    this.metaGraphService = new MetaGraphService(app, prefixService, logger);
   }
 
   /**
@@ -66,7 +68,7 @@ export class GraphService {
 
     // If some graphs failed to load, log warnings but continue
     if (loadingErrors.length > 0) {
-      console.warn('Some graphs failed to load:', loadingErrors);
+      this.logger.warn('Some graphs failed to load:', loadingErrors);
     }
 
     return graphs;

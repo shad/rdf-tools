@@ -10,17 +10,22 @@ import { RdfToolsSettingsTab } from './ui/RdfToolsSettingsTab';
 import { SparqlQueryDetailsModal } from './ui/SparqlQueryDetailsModal';
 import { SparqlQueryFactory } from './models/SparqlQuery';
 import { RdfToolsService } from './services/RdfToolsService';
+import { Logger } from './utils/Logger';
 
 export class RdfToolsPlugin extends Plugin {
   settings: RdfToolsSettings;
   statusBarItemEl: HTMLElement;
   rdfService: RdfToolsService;
+  logger: Logger;
 
   async onload() {
     await this.loadSettings();
 
+    // Initialize logger
+    this.logger = Logger.create(this.settings);
+
     // Initialize services
-    this.rdfService = this.addChild(new RdfToolsService(this.app, this, this.settings));
+    this.rdfService = this.addChild(new RdfToolsService(this.app, this, this.settings, this.logger));
 
     try {
 
@@ -28,7 +33,7 @@ export class RdfToolsPlugin extends Plugin {
       // this.statusBarItemEl = this.addStatusBarItem();
       // this.statusBarItemEl.setText('RDF Tools: Ready');
     } catch (error) {
-      console.error('RDF Tools: Failed to initialize:', error);
+      this.logger.error('Failed to initialize:', error);
       this.statusBarItemEl = this.addStatusBarItem();
       this.statusBarItemEl.setText('RDF Tools: Error');
     }
@@ -75,9 +80,7 @@ export class RdfToolsPlugin extends Plugin {
       })
     );
 
-    if (this.settings.enableDebugLogging) {
-      console.log('RDF Tools plugin loaded successfully');
-    }
+    this.logger.info('plugin loaded successfully');
   }
 
   async onunload() {
@@ -85,9 +88,7 @@ export class RdfToolsPlugin extends Plugin {
       await this.rdfService.onunload();
     }
 
-    if (this.settings.enableDebugLogging) {
-      console.log('RDF Tools plugin unloaded');
-    }
+    this.logger.info('plugin unloaded');
   }
 
   async loadSettings() {
@@ -136,7 +137,7 @@ export class RdfToolsPlugin extends Plugin {
       await navigator.clipboard.writeText(graphUri);
       new Notice(`Copied graph IRI: ${graphUri}`);
     } catch (error) {
-      console.error('Failed to copy graph IRI:', error);
+      this.logger.error('Failed to copy graph IRI:', error);
       new Notice('Failed to copy graph IRI to clipboard');
     }
   }
@@ -201,7 +202,7 @@ export class RdfToolsPlugin extends Plugin {
       modal.open();
 
     } catch (error) {
-      console.error('Error showing SPARQL query details:', error);
+      this.logger.error('Error showing SPARQL query details:', error);
       new Notice('Failed to analyze SPARQL query');
     }
   }

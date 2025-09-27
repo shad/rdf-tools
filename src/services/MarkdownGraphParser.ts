@@ -1,5 +1,6 @@
 import { Parser, Quad } from 'n3';
 import { extractTurtleBlocks } from '../utils/parsing';
+import { Logger } from '@/utils/Logger';
 
 /**
  * Error information for failed turtle block parsing
@@ -33,6 +34,7 @@ export interface MarkdownGraphParserOptions {
   format?: string;
   blankNodePrefix?: string;
   prefixes?: Record<string, string>;
+  logger?: Logger;
 }
 
 /**
@@ -96,7 +98,10 @@ export class MarkdownGraphParser {
               }
             })
             .catch(error => {
-              console.error('Unexpected error parsing turtle block:', error);
+              const logger = this.options.logger;
+              if (logger) {
+                logger.error('Unexpected error parsing turtle block:', error);
+              }
               result.errors.push({
                 blockIndex: block.index,
                 startLine: block.startLine,

@@ -13,6 +13,7 @@ import {
 import { QueryResults } from '@/models';
 import type { PrefixService } from '@/services/PrefixService';
 import { formatLiteralForDisplay } from '@/utils/literal-formatting';
+import { Logger } from '@/utils/Logger';
 
 /**
  * Options for rendering code block results
@@ -46,10 +47,26 @@ export class SparqlBlockProcessor extends Component {
   constructor(
     private app: App,
     private plugin: Plugin,
-    private rdfService?: { getPrefixService(): PrefixService }
+    private rdfService?: { getPrefixService(): PrefixService },
+    logger?: Logger
   ) {
     super();
+
+    // Ensure logger is always available
+    this.logger =
+      logger ||
+      ({
+        info: () => {},
+        debug: () => {},
+        warn: () => {},
+        error: () => {},
+        updateSettings: () => {},
+        enableDebugLogging: false,
+        prefix: 'RDF Tools:',
+      } as unknown as Logger);
   }
+
+  private logger: Logger;
 
   /**
    * Set the callback for SPARQL block processing
@@ -115,7 +132,7 @@ export class SparqlBlockProcessor extends Component {
     // Get the active file
     const file = this.app.vault.getAbstractFileByPath(ctx.sourcePath) as TFile;
     if (!file) {
-      console.error('Could not find file for editing:', ctx.sourcePath);
+      this.logger.error('Could not find file for editing:', ctx.sourcePath);
       return;
     }
 
@@ -127,7 +144,7 @@ export class SparqlBlockProcessor extends Component {
         // Get the active editor
         const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
         if (!activeView || !activeView.editor) {
-          console.error('Could not get active editor');
+          this.logger.error('Could not get active editor');
           return;
         }
 
@@ -170,7 +187,7 @@ export class SparqlBlockProcessor extends Component {
           }
         }
 
-        console.error('Could not find SPARQL block in file content');
+        this.logger.error('Could not find SPARQL block in file content');
       });
   }
 
@@ -183,7 +200,7 @@ export class SparqlBlockProcessor extends Component {
     queryResults?: QueryResults,
     options: RenderOptions = {}
   ): void {
-    console.debug('SparqlBlockProcessor: renderSparqlResult called', {
+    this.logger.debug('renderSparqlResult called', {
       parseSuccess: parseResult.success,
       queryResults: queryResults
         ? {
@@ -203,8 +220,8 @@ export class SparqlBlockProcessor extends Component {
 
     // If the result element doesn't exist, try to find or create it
     if (!resultEl) {
-      console.debug(
-        'SparqlBlockProcessor: .rdf-sparql-result element not found, attempting to create'
+      this.logger.debug(
+        '.rdf-sparql-result element not found, attempting to create'
       );
 
       // Try a more conservative approach: look for any existing structure we can use
@@ -214,9 +231,7 @@ export class SparqlBlockProcessor extends Component {
 
       // If no results container exists, create the minimal needed structure
       if (!resultsContainer) {
-        console.debug(
-          'SparqlBlockProcessor: Creating results container structure'
-        );
+        this.logger.debug('Creating results container structure');
 
         // Create results container - append to whatever container structure exists
         resultsContainer = container.ownerDocument.createElement('div');
@@ -227,22 +242,18 @@ export class SparqlBlockProcessor extends Component {
       }
 
       // Create the result element
-      console.debug(
-        'SparqlBlockProcessor: Creating .rdf-sparql-result element'
-      );
+      this.logger.debug('Creating .rdf-sparql-result element');
       resultEl = container.ownerDocument.createElement('div');
       resultEl.classList.add('rdf-sparql-result');
       resultsContainer.appendChild(resultEl);
 
-      console.debug('SparqlBlockProcessor: Created result element structure', {
+      this.logger.debug('Created result element structure', {
         container: container.className,
         resultsContainer: resultsContainer.className,
         resultEl: resultEl.className,
       });
     } else {
-      console.debug(
-        'SparqlBlockProcessor: Using existing .rdf-sparql-result element'
-      );
+      this.logger.debug('Using existing .rdf-sparql-result element');
     }
 
     // Clear previous results
@@ -262,21 +273,19 @@ export class SparqlBlockProcessor extends Component {
 
     // Show query execution results
     if (queryResults) {
-      console.debug('SparqlBlockProcessor: Rendering query results');
+      this.logger.debug('Rendering query results');
       // Extract query prefixes from parse result for use in rendering
       const queryPrefixes = parseResult.success
         ? parseResult.prefixes
         : undefined;
       this.renderQueryResults(resultEl, queryResults, options, queryPrefixes);
     } else {
-      console.debug('SparqlBlockProcessor: No query results to render');
+      this.logger.debug('No query results to render');
     }
 
     // Fallback: ensure we always show something if the element is empty
     if (resultEl.children.length === 0 && resultEl.textContent?.trim() === '') {
-      console.warn(
-        'SparqlBlockProcessor: Result element is empty, adding fallback content'
-      );
+      this.logger.warn('Result element is empty, adding fallback content');
       const fallbackEl = resultEl.createDiv({ cls: 'rdf-result-fallback' });
       fallbackEl.textContent = parseResult.success
         ? 'Query parsed successfully but no results displayed'
@@ -388,7 +397,7 @@ export class SparqlBlockProcessor extends Component {
 
     // Show execution error
     if (results.status === 'error') {
-      console.debug('SparqlBlockProcessor: Rendering error results', {
+      this.logger.debug('Rendering error results', {
         error: results.error,
         status: results.status,
         queryType: results.queryType,
@@ -407,16 +416,16 @@ export class SparqlBlockProcessor extends Component {
       errorEl.style.borderRadius = '4px';
       errorEl.style.color = '#991b1b';
 
-      console.debug('SparqlBlockProcessor: Error element created', errorEl);
+      this.logger.debug('Error element created', errorEl);
       return;
     }
 
     // Show successful results based on query type
     if (results.status === 'completed') {
-      console.debug('SparqlBlockProcessor: Rendering completed query results');
+      this.logger.debug('Rendering completed query results');
       this.renderCompletedQueryResults(el, results, options, queryPrefixes);
     } else {
-      console.warn('SparqlBlockProcessor: Unexpected query results status', {
+      this.logger.warn('Unexpected query results status', {
         status: results.status,
         queryType: results.queryType,
       });
@@ -429,8 +438,8 @@ export class SparqlBlockProcessor extends Component {
       unexpectedEl.style.fontStyle = 'italic';
     }
 
-    console.debug(
-      'SparqlBlockProcessor: renderQueryResults completed, element children:',
+    this.logger.debug(
+      'renderQueryResults completed, element children:',
       el.children.length
     );
   }
@@ -483,7 +492,7 @@ export class SparqlBlockProcessor extends Component {
     maxRows: number,
     queryPrefixes?: Record<string, string>
   ): void {
-    console.debug('SparqlBlockProcessor: renderSelectResults called', {
+    this.logger.debug('renderSelectResults called', {
       bindings: results.bindings,
       bindingsLength: results.bindings?.length,
       bindingsType: typeof results.bindings,
@@ -499,7 +508,7 @@ export class SparqlBlockProcessor extends Component {
       results.resultCount === 0;
 
     if (hasNoResults) {
-      console.debug('SparqlBlockProcessor: Rendering empty results message');
+      this.logger.debug('Rendering empty results message');
       const emptyEl = el.createDiv({ cls: 'rdf-result-empty' });
       emptyEl.textContent = 'No results';
 
@@ -510,17 +519,14 @@ export class SparqlBlockProcessor extends Component {
       emptyEl.style.fontStyle = 'italic';
       emptyEl.style.textAlign = 'center';
 
-      console.debug(
-        'SparqlBlockProcessor: Empty results element created',
-        emptyEl
-      );
+      this.logger.debug('Empty results element created', emptyEl);
       return;
     }
 
     // At this point we know results.bindings exists and has length > 0
     if (!results.bindings || results.bindings.length === 0) {
-      console.error(
-        'SparqlBlockProcessor: Unexpected state - should have results but bindings is empty'
+      this.logger.error(
+        'Unexpected state - should have results but bindings is empty'
       );
       return;
     }

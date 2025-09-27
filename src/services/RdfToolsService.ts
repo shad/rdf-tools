@@ -16,6 +16,7 @@ import { RdfToolsSettings } from '@/models';
 import { QueryResultsType } from '@/models';
 import { SparqlQuery } from '@/models';
 import { MarkdownErrorReporter } from './MarkdownErrorReporter';
+import { Logger } from '@/utils/Logger';
 
 /**
  * Main orchestrating service that coordinates all RDF processing
@@ -37,7 +38,8 @@ export class RdfToolsService extends Component {
   constructor(
     private app: App,
     private plugin: Plugin,
-    private settings: RdfToolsSettings
+    private settings: RdfToolsSettings,
+    private logger: Logger
   ) {
     super();
 
@@ -47,15 +49,20 @@ export class RdfToolsService extends Component {
     // Initialize services
     this.codeBlockExtractor = new CodeBlockExtractorService();
     this.sparqlParser = new SparqlParserService(this.prefixService);
-    this.graphService = new GraphService(this.app, this.prefixService);
+    this.graphService = new GraphService(
+      this.app,
+      this.prefixService,
+      this.logger
+    );
     this.queryExecutor = new QueryExecutorService(this.graphService);
     this.sparqlQueryTracker = new SparqlQueryTracker(this.graphService);
     this.codeBlockProcessor = new SparqlBlockProcessor(
       this.app,
       this.plugin,
-      this
+      this,
+      this.logger
     );
-    this.errorReporter = new MarkdownErrorReporter(this.app);
+    this.errorReporter = new MarkdownErrorReporter(this.app, this.logger);
   }
 
   async onload() {
@@ -75,9 +82,7 @@ export class RdfToolsService extends Component {
     // Set up workspace integration for query tracking
     this.setupWorkspaceIntegration();
 
-    if (this.settings.enableDebugLogging) {
-      console.log('RdfToolsService: Debug logging enabled');
-    }
+    this.logger.info('Debug logging enabled');
   }
 
   /**
@@ -96,9 +101,7 @@ export class RdfToolsService extends Component {
     // Clear error displays
     this.errorReporter.clearAllErrors();
 
-    if (this.settings.enableDebugLogging) {
-      console.log('RDF Tools: Service cleanup completed');
-    }
+    this.logger.info('Service cleanup completed');
   }
 
   /**
@@ -109,12 +112,10 @@ export class RdfToolsService extends Component {
     container: HTMLElement,
     ctx: MarkdownPostProcessorContext
   ): Promise<void> {
-    if (this.settings.enableDebugLogging) {
-      console.log('RDF Tools: Processing SPARQL block', {
-        source: source.substring(0, 100) + '...',
-        sourcePath: ctx.sourcePath,
-      });
-    }
+    this.logger.debug('Processing SPARQL block', {
+      source: source.substring(0, 100) + '...',
+      sourcePath: ctx.sourcePath,
+    });
 
     try {
       // Create query from current content
@@ -175,14 +176,9 @@ export class RdfToolsService extends Component {
             showMetrics: this.settings.enableDebugLogging,
           }
         );
-        if (this.settings.enableDebugLogging) {
-          console.log('RDF Tools: Successfully rendered SPARQL parse result');
-        }
+        this.logger.debug('Successfully rendered SPARQL parse result');
       } catch (renderError) {
-        console.error(
-          'RDF Tools: Error rendering SPARQL parse result:',
-          renderError
-        );
+        this.logger.error('Error rendering SPARQL parse result:', renderError);
         // Fallback: show basic error message
         const resultEl = container.querySelector(
           '.rdf-sparql-result'
@@ -207,7 +203,7 @@ export class RdfToolsService extends Component {
             truncated: false,
           });
         } catch (renderError) {
-          console.error('RDF Tools: Error showing loading state:', renderError);
+          this.logger.error('Error showing loading state:', renderError);
         }
 
         // Execute the query
@@ -217,11 +213,9 @@ export class RdfToolsService extends Component {
           // Register query with tracker for live updates (after successful execution)
           if (results.status === 'completed') {
             this.sparqlQueryTracker.registerQuery(query, container, file);
-            if (this.settings.enableDebugLogging) {
-              console.log(
-                `RDF Tools: Registered SPARQL query for live updates in ${file.path}`
-              );
-            }
+            this.logger.debug(
+              `Registered SPARQL query for live updates in ${file.path}`
+            );
           }
 
           // Update display with results
@@ -236,10 +230,7 @@ export class RdfToolsService extends Component {
               }
             );
           } catch (renderError) {
-            console.error(
-              'RDF Tools: Error rendering SPARQL results:',
-              renderError
-            );
+            this.logger.error('Error rendering SPARQL results:', renderError);
             // Fallback: show basic error message
             const resultEl = container.querySelector(
               '.rdf-sparql-result'
@@ -253,15 +244,15 @@ export class RdfToolsService extends Component {
             }
           }
         } catch (executionError) {
-          console.error(
-            'RDF Tools: Query execution failed with exception:',
+          this.logger.error(
+            'Query execution failed with exception:',
             executionError
           );
           throw executionError;
         }
       }
     } catch (error) {
-      console.error('RDF Tools: Error processing SPARQL block:', error);
+      this.logger.error('Error processing SPARQL block:', error);
 
       // Show error in UI
       const resultEl = container.querySelector(
@@ -417,8 +408,8 @@ export class RdfToolsService extends Component {
       try {
         await this.handleFileModificationWithDependencies(file);
       } catch (error) {
-        console.error(
-          `RDF Tools: Error handling file modification for ${filePath}:`,
+        this.logger.error(
+          `Error handling file modification for ${filePath}:`,
           error
         );
       } finally {
@@ -444,19 +435,17 @@ export class RdfToolsService extends Component {
     const dependentQueries =
       this.sparqlQueryTracker.findQueriesDependingOnGraph(graphUri);
 
-    if (this.settings.enableDebugLogging) {
-      console.log(
-        `RDF Tools: File ${file.path} modified (graphUri: ${graphUri}), found ${dependentQueries.length} dependent queries`
-      );
+    this.logger.debug(
+      `File ${file.path} modified (graphUri: ${graphUri}), found ${dependentQueries.length} dependent queries`
+    );
 
-      // Debug: Show which queries will be re-executed
-      dependentQueries.forEach((queryInfo, i) => {
-        console.log(
-          `  Query ${i + 1}: in file ${queryInfo.file.path}, depends on:`,
-          queryInfo.dependentGraphs
-        );
-      });
-    }
+    // Debug: Show which queries will be re-executed
+    dependentQueries.forEach((queryInfo, i) => {
+      this.logger.debug(
+        `  Query ${i + 1}: in file ${queryInfo.file.path}, depends on:`,
+        queryInfo.dependentGraphs
+      );
+    });
 
     // 3. Re-execute dependent queries in parallel for better performance
     if (dependentQueries.length > 0) {
@@ -464,30 +453,24 @@ export class RdfToolsService extends Component {
         queryInfo => !queryInfo.isExecuting
       );
 
-      if (this.settings.enableDebugLogging) {
-        console.log(
-          `RDF Tools: Re-executing ${filteredQueries.length} queries (${dependentQueries.length - filteredQueries.length} already executing)`
-        );
-      }
+      this.logger.debug(
+        `Re-executing ${filteredQueries.length} queries (${dependentQueries.length - filteredQueries.length} already executing)`
+      );
 
       if (filteredQueries.length > 0) {
         const reExecutionPromises = filteredQueries.map(
           async (queryInfo, index) => {
             try {
-              if (this.settings.enableDebugLogging) {
-                console.log(
-                  `RDF Tools: Starting re-execution ${index + 1}/${filteredQueries.length} for ${queryInfo.file.path}`
-                );
-              }
+              this.logger.debug(
+                `Starting re-execution ${index + 1}/${filteredQueries.length} for ${queryInfo.file.path}`
+              );
               await this.reExecuteSparqlQuery(queryInfo);
-              if (this.settings.enableDebugLogging) {
-                console.log(
-                  `RDF Tools: Completed re-execution ${index + 1}/${filteredQueries.length} for ${queryInfo.file.path}`
-                );
-              }
+              this.logger.debug(
+                `Completed re-execution ${index + 1}/${filteredQueries.length} for ${queryInfo.file.path}`
+              );
             } catch (error) {
-              console.error(
-                `RDF Tools: Error re-executing query ${index + 1} in ${queryInfo.file.path}:`,
+              this.logger.error(
+                `Error re-executing query ${index + 1} in ${queryInfo.file.path}:`,
                 error
               );
             }
@@ -508,10 +491,7 @@ export class RdfToolsService extends Component {
             timeoutPromise,
           ]);
         } catch (error) {
-          console.error(
-            'RDF Tools: Error during bulk query re-execution:',
-            error
-          );
+          this.logger.error('Error during bulk query re-execution:', error);
         }
       }
     }
@@ -586,12 +566,10 @@ export class RdfToolsService extends Component {
 
       return null;
     } catch (error) {
-      if (this.settings.enableDebugLogging) {
-        console.error(
-          `RDF Tools: Error finding SPARQL container in ${file.path}:`,
-          error
-        );
-      }
+      this.logger.debug(
+        `Error finding SPARQL container in ${file.path}:`,
+        error
+      );
       return null;
     }
   }
@@ -602,11 +580,9 @@ export class RdfToolsService extends Component {
   private async reExecuteSparqlQuery(
     queryInfo: SparqlQueryInfo
   ): Promise<void> {
-    if (this.settings.enableDebugLogging) {
-      console.log(
-        `RDF Tools: reExecuteSparqlQuery called for ${queryInfo.file.path}, query ID: ${queryInfo.id}`
-      );
-    }
+    this.logger.debug(
+      `reExecuteSparqlQuery called for ${queryInfo.file.path}, query ID: ${queryInfo.id}`
+    );
 
     try {
       // Check if the container still exists in the DOM
@@ -642,11 +618,7 @@ export class RdfToolsService extends Component {
       // Mark as executing
       this.sparqlQueryTracker.setQueryExecuting(queryInfo.id, true);
 
-      if (this.settings.enableDebugLogging) {
-        console.log(
-          `RDF Tools: Re-executing SPARQL query in ${queryInfo.file.path}`
-        );
-      }
+      this.logger.debug(`Re-executing SPARQL query in ${queryInfo.file.path}`);
 
       // Show loading state
       try {
@@ -673,7 +645,7 @@ export class RdfToolsService extends Component {
           }
         );
       } catch (renderError) {
-        console.error('RDF Tools: Error showing loading state:', renderError);
+        this.logger.error('Error showing loading state:', renderError);
       }
 
       // Execute the query
@@ -703,10 +675,7 @@ export class RdfToolsService extends Component {
           }
         );
       } catch (renderError) {
-        console.error(
-          'RDF Tools: Error rendering SPARQL results:',
-          renderError
-        );
+        this.logger.error('Error rendering SPARQL results:', renderError);
         // Fallback: show basic error message
         const resultEl = queryInfo.container.querySelector(
           '.rdf-sparql-result'
@@ -720,7 +689,7 @@ export class RdfToolsService extends Component {
         }
       }
     } catch (error) {
-      console.error('RDF Tools: Error re-executing SPARQL query:', error);
+      this.logger.error('Error re-executing SPARQL query:', error);
 
       // Show error in UI
       const resultEl = queryInfo.container.querySelector(
@@ -835,7 +804,7 @@ export class RdfToolsService extends Component {
           }
         }
       } catch (error) {
-        console.warn(`Failed to extract prefixes from ${graphUri}:`, error);
+        this.logger.warn(`Failed to extract prefixes from ${graphUri}:`, error);
         // Continue with other files even if one fails
       }
     }
@@ -861,7 +830,7 @@ export class RdfToolsService extends Component {
           try {
             await this.reExecuteSparqlQuery(queryInfo);
           } catch (error) {
-            console.error(
+            this.logger.error(
               'Error re-executing metadata-dependent query:',
               error
             );

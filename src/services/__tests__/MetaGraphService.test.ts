@@ -48,7 +48,14 @@ describe('MetaGraphService', () => {
       },
     } as unknown as App;
 
-    service = new MetaGraphService(mockApp, mockPrefixService);
+    const mockLogger = {
+      info: vi.fn(),
+      debug: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+      updateSettings: vi.fn(),
+    } as any;
+    service = new MetaGraphService(mockApp, mockPrefixService, mockLogger);
   });
 
   describe('generateOntologyGraph', () => {

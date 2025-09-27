@@ -128,7 +128,14 @@ describe('QueryExecutorService - FROM/FROM NAMED/Default Graph Tests', () => {
     } as unknown as SparqlParserService;
 
     // Setup GraphService with mocked methods
-    mockGraphService = new GraphService(mockApp, mockPrefixService);
+    const mockLogger = {
+      info: vi.fn(),
+      debug: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+      updateSettings: vi.fn(),
+    } as any;
+    mockGraphService = new GraphService(mockApp, mockPrefixService, mockLogger);
 
     // Mock the getGraphs method to return test data
     vi.spyOn(mockGraphService, 'getGraphs').mockImplementation(async (graphUris: string[]) => {

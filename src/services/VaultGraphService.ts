@@ -3,6 +3,7 @@ import { TFile, App } from 'obsidian';
 import { Graph } from '../models/Graph';
 import { MarkdownGraphParser } from './MarkdownGraphParser';
 import { PrefixService } from './PrefixService';
+import { Logger } from '@/utils/Logger';
 
 /**
  * Stateless service for generating vault content-based RDF graphs (vault:// URIs)
@@ -11,7 +12,8 @@ import { PrefixService } from './PrefixService';
 export class VaultGraphService {
   constructor(
     private app: App,
-    private prefixService: PrefixService
+    private prefixService: PrefixService,
+    private logger: Logger
   ) {}
 
   /**
@@ -107,13 +109,15 @@ export class VaultGraphService {
     try {
       const filePath = this.extractFilePathFromGraphUri(graphUri);
       if (!filePath) {
-        console.error(`Cannot extract file path from graph URI: ${graphUri}`);
+        this.logger.error(
+          `Cannot extract file path from graph URI: ${graphUri}`
+        );
         return null;
       }
 
       const file = this.app.vault.getAbstractFileByPath(filePath) as TFile;
       if (!file) {
-        console.error(`File not found: ${filePath}`);
+        this.logger.error(`File not found: ${filePath}`);
         return null;
       }
 
@@ -140,11 +144,12 @@ export class VaultGraphService {
         const markdownParser = new MarkdownGraphParser({
           baseUri,
           prefixes: this.prefixService.getGlobalPrefixes(),
+          logger: this.logger,
         });
 
         const parseResult = await markdownParser.parse(content);
         if (!parseResult.success) {
-          console.error(
+          this.logger.error(
             `Failed to parse vault graph ${graphUri}:`,
             parseResult.errors
           );
@@ -165,7 +170,7 @@ export class VaultGraphService {
         tripleCount,
       };
     } catch (error) {
-      console.error(`Error loading vault graph ${graphUri}:`, error);
+      this.logger.error(`Error loading vault graph ${graphUri}:`, error);
       return null;
     }
   }

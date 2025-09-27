@@ -52,7 +52,14 @@ describe('RdfToolsService Integration Tests', () => {
       showDetailedErrors: true,
     };
 
-    service = new RdfToolsService(mockApp as App, mockPlugin, mockSettings);
+    const mockLogger = {
+      info: vi.fn(),
+      debug: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+      updateSettings: vi.fn(),
+    } as any;
+    service = new RdfToolsService(mockApp as App, mockPlugin, mockSettings, mockLogger);
   });
 
   describe('SPARQL Query Execution Path - Real UI Flow', () => {
