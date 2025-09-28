@@ -1,9 +1,10 @@
 import { Store, Parser } from 'n3';
-import { TFile, App } from 'obsidian';
+import { App } from 'obsidian';
 import { Graph } from '../models/Graph';
 import { MarkdownGraphParser } from './MarkdownGraphParser';
 import { PrefixService } from './PrefixService';
 import { Logger } from '@/utils/Logger';
+import { safeTFileFromPath } from '../models/TypeGuards';
 
 /**
  * Stateless service for generating vault content-based RDF graphs (vault:// URIs)
@@ -115,9 +116,9 @@ export class VaultGraphService {
         return null;
       }
 
-      const file = this.app.vault.getAbstractFileByPath(filePath) as TFile;
+      const file = safeTFileFromPath(this.app.vault, filePath);
       if (!file) {
-        this.logger.error(`File not found: ${filePath}`);
+        this.logger.error(`File not found or is not a file: ${filePath}`);
         return null;
       }
 

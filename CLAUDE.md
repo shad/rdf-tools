@@ -227,4 +227,184 @@ store.addQuad(quad(subject, predicate, object)); // Missing graph context
 - Missing graph context results in empty results and potential stream hanging
 - Mixed graph queries (`FROM <graph1> FROM <graph2>`) require each graph to have proper context
 
+## Obsidian Community Plugin Compliance Rules
+
+**CRITICAL**: These rules MUST be followed to maintain Obsidian marketplace compliance. Violations will prevent plugin approval.
+
+### 1. File/Folder Type Safety
+**ALWAYS use TypeScript type guards for safe file/folder validation**
+
+❌ **FORBIDDEN:**
+```typescript
+const file = app.vault.getAbstractFileByPath(path) as TFile;
+// OR complex duck typing checks
+const abstractFile = app.vault.getAbstractFileByPath(path);
+if (!abstractFile || !('extension' in abstractFile) || !('stat' in abstractFile) || 'children' in abstractFile) {
+  return;
+}
+```
+
+✅ **REQUIRED - Use Type Guards:**
+```typescript
+import { safeTFileFromPath, isTFile, isTFolder } from '../models/TypeGuards';
+
+// Simple file retrieval
+const file = safeTFileFromPath(app.vault, path);
+if (!file) {
+  // Handle error - not found or not a file
+  return;
+}
+
+// Type checking existing objects
+if (isTFile(abstractFile)) {
+  const file = abstractFile; // TypeScript knows this is TFile
+  // ... work with file
+}
+
+if (isTFolder(abstractFile)) {
+  const folder = abstractFile; // TypeScript knows this is TFolder
+  // ... work with folder
+}
+```
+
+**Type Guard Functions** (defined in `src/models/TypeGuards.ts`):
+- `isTFile(file)` - Checks if object is a TFile
+- `isTFolder(file)` - Checks if object is a TFolder
+- `safeTFileFromPath(vault, path)` - Safely gets TFile or returns null
+- `safeTFolderFromPath(vault, path)` - Safely gets TFolder or returns null
+- `validateFileType(file, 'file'|'folder')` - Validation with error messages
+
+### 2. DOM Security - NO innerHTML
+**NEVER use innerHTML, outerHTML, or insertAdjacentHTML**
+
+❌ **FORBIDDEN:**
+```typescript
+element.innerHTML = content;
+element.outerHTML = content;
+element.insertAdjacentHTML('beforeend', content);
+```
+
+✅ **REQUIRED:**
+```typescript
+element.textContent = content;  // For text content
+element.createEl('div');        // For element creation
+element.appendChild(newElement); // For DOM manipulation
+```
+
+**Obsidian Helper Functions**: Use `createEl()`, `createDiv()`, `createSpan()` methods
+
+### 3. Styling - NO JavaScript Style Assignment
+**NEVER assign styles via JavaScript**
+
+❌ **FORBIDDEN:**
+```typescript
+element.style.color = 'red';
+element.style.padding = '10px';
+element.setAttribute('style', 'color: red');
+```
+
+✅ **REQUIRED:**
+```typescript
+element.classList.add('my-style-class');
+element.classList.remove('unwanted-class');
+// Define styles in styles.css file
+```
+
+**CSS Classes**: All styling must be in `styles.css` using CSS classes and CSS variables
+
+### 4. Console Logging Control
+**NEVER use direct console.log in production code**
+
+❌ **FORBIDDEN:**
+```typescript
+console.log('Debug info');
+console.warn('Warning');
+console.error('Error');
+```
+
+✅ **REQUIRED:**
+```typescript
+this.logger.debug('Debug info');    // Controlled by settings
+this.logger.warn('Warning');        // Always logged
+this.logger.error('Error');         // Always logged
+```
+
+**Logger Usage**: Use centralized Logger class with configurable debug levels
+
+### 5. Type Safety - NO 'as any'
+**NEVER use 'as any' casting in production code**
+
+❌ **FORBIDDEN:**
+```typescript
+const result = someFunction() as any;
+const data = response as any;
+```
+
+✅ **REQUIRED:**
+```typescript
+const result: SpecificType = someFunction();
+const data = response as ExpectedInterface;
+// Use proper interfaces and type guards
+```
+
+**Exception**: 'as any' is acceptable ONLY in test files for mocking complex objects
+
+### 6. Build Configuration
+**Production builds must be readable (not minified)**
+
+✅ **REQUIRED in esbuild.config.mjs:**
+```javascript
+minify: false,  // REQUIRED for Obsidian compliance
+```
+
+### 7. Error Handling Patterns
+**Always implement graceful error handling**
+
+✅ **REQUIRED:**
+```typescript
+try {
+  // Risky operation
+} catch (error) {
+  this.logger.error('Operation failed:', error);
+  // Provide user feedback
+  new Notice('Operation failed: ' + error.message);
+  // Continue execution gracefully
+}
+```
+
+### 8. Compliance Verification
+**Before any release or major changes:**
+
+```bash
+npm run check-all  # Must pass without errors
+npm run build      # Must generate readable main.js
+```
+
+**Automated Checks**:
+- No innerHTML/outerHTML usage
+- No direct style assignments
+- No unsafe casting without validation
+- No 'as any' in production code
+- No direct console usage in production
+
+### 9. Test File Exceptions
+**Test files (.test.ts, .spec.ts) may use:**
+- 'as any' for mocking complex Obsidian API objects
+- innerHTML for DOM testing scenarios
+- Direct console.log for test debugging (should be commented out)
+
+### 10. Release Artifacts Requirements
+**Required files for Obsidian marketplace:**
+- `main.js` - Must be readable (not minified)
+- `manifest.json` - Must follow Obsidian schema exactly
+- `styles.css` - Optional but recommended for custom styling
+
+**ENFORCEMENT**: These rules are enforced by:
+1. ESLint rules (where possible)
+2. Manual code review before release
+3. Obsidian's automated scanning system
+4. Community review process
+
+Violating these rules will result in plugin rejection by Obsidian's review process.
+
 This project implements a sophisticated RDF processing system within Obsidian while maintaining clean architecture, comprehensive testing, and excellent developer experience.

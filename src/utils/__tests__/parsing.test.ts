@@ -165,7 +165,7 @@ ex:subject ex:predicate ex:object .
 Some text without any code blocks.
 
 \`\`\`javascript
-console.log('not turtle');
+// not turtle code here
 \`\`\`
       `;
 

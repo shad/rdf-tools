@@ -574,7 +574,7 @@ describe('GraphService', () => {
         );
 
         expect(mockLogger.error).toHaveBeenCalledWith(
-          'File not found: invalid.md'
+          'File not found or is not a file: invalid.md'
         );
       });
 

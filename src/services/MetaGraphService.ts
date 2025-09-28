@@ -1,8 +1,9 @@
 import { Store, DataFactory, Parser } from 'n3';
-import { TFile, TAbstractFile, TFolder, App } from 'obsidian';
+import { TAbstractFile, TFile, App } from 'obsidian';
 import { Graph } from '../models/Graph';
 import { PrefixService } from './PrefixService';
 import { Logger } from '@/utils/Logger';
+import { isTFile, isTFolder } from '../models/TypeGuards';
 import ontologyContent from '../../v1.ttl?text';
 
 const { namedNode, literal, quad } = DataFactory;
@@ -124,9 +125,8 @@ export class MetaGraphService {
       )
     );
 
-    if ('extension' in file && 'stat' in file) {
-      // File-specific properties
-      const tFile = file as TFile;
+    if (isTFile(file)) {
+      const tFile = file;
       const fileType = this.getFileType(tFile);
       store.addQuad(
         quad(
@@ -229,8 +229,8 @@ export class MetaGraphService {
    */
   private addContainmentTriples(store: Store, allFiles: TAbstractFile[]): void {
     for (const file of allFiles) {
-      if ('children' in file && !('extension' in file)) {
-        const tFolder = file as TFolder;
+      if (isTFolder(file)) {
+        const tFolder = file;
         const folderNormalizedPath = tFolder.path.replace(/^\/+/, '');
         const folderUri = namedNode(`vault://${folderNormalizedPath}`);
 

@@ -58,6 +58,7 @@
   user-select: none;
   padding-left: 0.5rem;
   line-height: 2rem;
+  cursor: pointer;
 }
 
 .rdf-sparql-edit-header:hover {
@@ -356,4 +357,33 @@
 
 .rdf-literal-other {
   color: var(--text-normal);
+}
+
+/* Additional styles for JavaScript replacements */
+.rdf-result-fallback {
+  padding: 10px;
+  color: #999;
+  font-style: italic;
+}
+
+.rdf-result-execution-error {
+  padding: 10px;
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 4px;
+  color: #991b1b;
+}
+
+.rdf-result-unexpected {
+  padding: 10px;
+  color: #666;
+  font-style: italic;
+}
+
+.rdf-result-empty-styled {
+  padding: 10px;
+  font-size: 14px;
+  color: #666;
+  font-style: italic;
+  text-align: center;
 }

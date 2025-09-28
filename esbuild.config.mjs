@@ -63,7 +63,7 @@ const context = await esbuild.context({
 	sourcemap: prod ? false : "inline",
 	treeShaking: true,
 	outfile: "main.js",
-	minify: prod,
+	minify: false,  // Disabled for Obsidian community plugin compliance - code must be readable
 	define: {
 		'global': 'globalThis',
 		'process.env.NODE_ENV': JSON.stringify(prod ? 'production' : 'development'),

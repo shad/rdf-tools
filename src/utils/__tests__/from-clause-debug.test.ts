@@ -16,11 +16,12 @@ describe('FROM clause parsing debug', () => {
 
     const result = parseSparqlQuery(query);
 
-    console.log('DEBUG: parseSparqlQuery result:');
-    console.log('- success:', result.success);
-    console.log('- fromGraphs:', result.fromGraphs);
-    console.log('- fromNamedGraphs:', result.fromNamedGraphs);
-    console.log('- error:', result.error?.message);
+    // Debug info commented out for production
+    // console.log('DEBUG: parseSparqlQuery result:');
+    // console.log('- success:', result.success);
+    // console.log('- fromGraphs:', result.fromGraphs);
+    // console.log('- fromNamedGraphs:', result.fromNamedGraphs);
+    // console.log('- error:', result.error?.message);
 
     expect(result.success).toBe(true);
     expect(result.fromGraphs).toEqual(['vault://hellboy-universe.md']);
@@ -36,10 +37,11 @@ describe('FROM clause parsing debug', () => {
 
     const result = parseSparqlQuery(query);
 
-    console.log('DEBUG: FROM NAMED result:');
-    console.log('- success:', result.success);
-    console.log('- fromGraphs:', result.fromGraphs);
-    console.log('- fromNamedGraphs:', result.fromNamedGraphs);
+    // Debug info commented out for production
+    // console.log('DEBUG: FROM NAMED result:');
+    // console.log('- success:', result.success);
+    // console.log('- fromGraphs:', result.fromGraphs);
+    // console.log('- fromNamedGraphs:', result.fromNamedGraphs);
 
     expect(result.success).toBe(true);
     expect(result.fromGraphs).toEqual([]);

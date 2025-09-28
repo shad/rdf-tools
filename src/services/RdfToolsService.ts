@@ -13,6 +13,7 @@ import { PrefixService } from './PrefixService';
 import { SparqlQueryTracker, SparqlQueryInfo } from './SparqlQueryTracker';
 import { SparqlBlockProcessor } from '@/ui/SparqlBlockProcessor';
 import { RdfToolsSettings } from '@/models';
+import { safeTFileFromPath } from '../models/TypeGuards';
 import { QueryResultsType } from '@/models';
 import { SparqlQuery } from '@/models';
 import { MarkdownErrorReporter } from './MarkdownErrorReporter';
@@ -119,10 +120,11 @@ export class RdfToolsService extends Component {
 
     try {
       // Create query from current content
-      const file = this.app.vault.getAbstractFileByPath(
-        ctx.sourcePath
-      ) as TFile;
-      if (!file) return;
+      const file = safeTFileFromPath(this.app.vault, ctx.sourcePath);
+      if (!file) {
+        this.logger.error(`Source path is not a file: ${ctx.sourcePath}`);
+        return;
+      }
 
       // Note: Graphs are now loaded lazily at query execution time
 
@@ -184,7 +186,10 @@ export class RdfToolsService extends Component {
           '.rdf-sparql-result'
         ) as HTMLElement;
         if (resultEl) {
-          resultEl.innerHTML = '';
+          // Clear existing content
+          while (resultEl.firstChild) {
+            resultEl.removeChild(resultEl.firstChild);
+          }
           const errorEl = resultEl.ownerDocument.createElement('div');
           errorEl.className = 'rdf-result-error';
           errorEl.textContent = `Render error: ${renderError instanceof Error ? renderError.message : 'Unknown error'}`;
@@ -236,7 +241,10 @@ export class RdfToolsService extends Component {
               '.rdf-sparql-result'
             ) as HTMLElement;
             if (resultEl) {
-              resultEl.innerHTML = '';
+              // Clear existing content
+              while (resultEl.firstChild) {
+                resultEl.removeChild(resultEl.firstChild);
+              }
               const errorEl = resultEl.ownerDocument.createElement('div');
               errorEl.className = 'rdf-result-error';
               errorEl.textContent = `Render error: ${renderError instanceof Error ? renderError.message : 'Unknown error'}`;
@@ -259,7 +267,10 @@ export class RdfToolsService extends Component {
         '.rdf-sparql-result'
       ) as HTMLElement;
       if (resultEl) {
-        resultEl.innerHTML = '';
+        // Clear existing content
+        while (resultEl.firstChild) {
+          resultEl.removeChild(resultEl.firstChild);
+        }
         const errorEl = resultEl.ownerDocument.createElement('div');
         errorEl.className = 'rdf-result-error';
         errorEl.textContent = `Processing error: ${error instanceof Error ? error.message : 'Unknown error'}`;
@@ -681,7 +692,10 @@ export class RdfToolsService extends Component {
           '.rdf-sparql-result'
         ) as HTMLElement;
         if (resultEl) {
-          resultEl.innerHTML = '';
+          // Clear existing content
+          while (resultEl.firstChild) {
+            resultEl.removeChild(resultEl.firstChild);
+          }
           const errorEl = resultEl.ownerDocument.createElement('div');
           errorEl.className = 'rdf-result-error';
           errorEl.textContent = `Render error: ${renderError instanceof Error ? renderError.message : 'Unknown error'}`;
@@ -696,7 +710,10 @@ export class RdfToolsService extends Component {
         '.rdf-sparql-result'
       ) as HTMLElement;
       if (resultEl) {
-        resultEl.innerHTML = '';
+        // Clear existing content
+        while (resultEl.firstChild) {
+          resultEl.removeChild(resultEl.firstChild);
+        }
         const errorEl = resultEl.ownerDocument.createElement('div');
         errorEl.className = 'rdf-result-error';
         errorEl.textContent = `Execution error: ${error instanceof Error ? error.message : 'Unknown error'}`;

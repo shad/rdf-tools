@@ -32,6 +32,12 @@ describe('QueryExecutorService - FROM Clause Regression Tests', () => {
             return {
               path: 'hellboy-universe.md',
               name: 'hellboy-universe.md',
+              extension: 'md',
+              stat: {
+                size: 100,
+                ctime: Date.now(),
+                mtime: Date.now(),
+              },
             } as TFile;
           }
           return null;
@@ -88,7 +94,16 @@ describe('QueryExecutorService - FROM Clause Regression Tests', () => {
     const query = SparqlQueryFactory.createSparqlQuery({
       queryString,
       location: {
-        file: { path: 'hellboy-queries.md' } as TFile,
+        file: {
+          path: 'hellboy-queries.md',
+          name: 'hellboy-queries.md',
+          extension: 'md',
+          stat: {
+            size: 100,
+            ctime: Date.now(),
+            mtime: Date.now(),
+          },
+        } as TFile,
         startLine: 1,
         endLine: 8,
         startColumn: 1,
@@ -243,7 +258,16 @@ describe('QueryExecutorService - FROM Clause Regression Tests', () => {
     const query = SparqlQueryFactory.createSparqlQuery({
       queryString,
       location: {
-        file: { path: 'hellboy-queries.md' } as TFile,
+        file: {
+          path: 'hellboy-queries.md',
+          name: 'hellboy-queries.md',
+          extension: 'md',
+          stat: {
+            size: 100,
+            ctime: Date.now(),
+            mtime: Date.now(),
+          },
+        } as TFile,
         startLine: 1,
         endLine: 8,
         startColumn: 1,

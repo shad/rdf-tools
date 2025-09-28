@@ -120,6 +120,7 @@ export class RdfToolsPlugin extends Plugin {
         this.showSparqlQueryDetails(editor);
       },
     });
+
   }
 
   /**

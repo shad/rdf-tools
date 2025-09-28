@@ -3,9 +3,9 @@ import {
   Component,
   MarkdownPostProcessorContext,
   Plugin,
-  TFile,
   MarkdownView,
 } from 'obsidian';
+import { safeTFileFromPath } from '../models/TypeGuards';
 import {
   SparqlParseResult,
   SparqlParseError,
@@ -84,7 +84,9 @@ export class SparqlBlockProcessor extends Component {
       'sparql',
       async (source, el, ctx) => {
         // Hide the original code block and replace with minimal clickable area
-        el.innerHTML = '';
+        while (el.firstChild) {
+          el.removeChild(el.firstChild);
+        }
         const container = el.ownerDocument.createElement('div');
         container.classList.add('rdf-sparql-container');
 
@@ -92,7 +94,7 @@ export class SparqlBlockProcessor extends Component {
         const editHeader = el.ownerDocument.createElement('div');
         editHeader.classList.add('rdf-sparql-edit-header');
         editHeader.textContent = 'View query';
-        editHeader.style.cursor = 'pointer';
+        // Cursor style now handled by CSS class
         editHeader.title = 'Click to edit query';
 
         // Add click handler for edit functionality
@@ -130,7 +132,7 @@ export class SparqlBlockProcessor extends Component {
     ctx: MarkdownPostProcessorContext
   ): void {
     // Get the active file
-    const file = this.app.vault.getAbstractFileByPath(ctx.sourcePath) as TFile;
+    const file = safeTFileFromPath(this.app.vault, ctx.sourcePath);
     if (!file) {
       this.logger.error('Could not find file for editing:', ctx.sourcePath);
       return;
@@ -257,7 +259,9 @@ export class SparqlBlockProcessor extends Component {
     }
 
     // Clear previous results
-    resultEl.innerHTML = '';
+    while (resultEl.firstChild) {
+      resultEl.removeChild(resultEl.firstChild);
+    }
 
     // Show parse errors first if any
     if (!parseResult.success) {
@@ -290,9 +294,7 @@ export class SparqlBlockProcessor extends Component {
       fallbackEl.textContent = parseResult.success
         ? 'Query parsed successfully but no results displayed'
         : 'Query parsing completed';
-      fallbackEl.style.padding = '10px';
-      fallbackEl.style.color = '#999';
-      fallbackEl.style.fontStyle = 'italic';
+      fallbackEl.classList.add('rdf-result-fallback');
     }
   }
 
@@ -307,7 +309,7 @@ export class SparqlBlockProcessor extends Component {
     const successEl = el.createDiv({ cls: 'rdf-result-success' });
 
     const icon = successEl.createSpan({ cls: 'rdf-result-icon' });
-    icon.innerHTML = '✓';
+    icon.textContent = '✓';
 
     const message = successEl.createSpan({ cls: 'rdf-result-message' });
     message.textContent = `Valid ${result.queryType?.toUpperCase()} query`;
@@ -349,7 +351,7 @@ export class SparqlBlockProcessor extends Component {
     const errorEl = el.createDiv({ cls: 'rdf-result-error' });
 
     const icon = errorEl.createSpan({ cls: 'rdf-result-icon' });
-    icon.innerHTML = '✗';
+    icon.textContent = '✗';
 
     const message = errorEl.createSpan({ cls: 'rdf-result-message' });
     message.textContent = error.message;
@@ -391,7 +393,7 @@ export class SparqlBlockProcessor extends Component {
     // Show loading state if executing
     if (results.status === 'executing') {
       const loadingEl = el.createDiv({ cls: 'rdf-result-loading' });
-      loadingEl.innerHTML = '⏳ Executing query...';
+      loadingEl.textContent = '⏳ Executing query...';
       return;
     }
 
@@ -405,16 +407,12 @@ export class SparqlBlockProcessor extends Component {
 
       const errorEl = el.createDiv({ cls: 'rdf-result-error' });
       const icon = errorEl.createSpan({ cls: 'rdf-result-icon' });
-      icon.innerHTML = '✗';
+      icon.textContent = '✗';
       const message = errorEl.createSpan({ cls: 'rdf-result-message' });
       message.textContent = results.error || 'Query execution failed';
 
-      // Add some basic styling to ensure visibility
-      errorEl.style.padding = '10px';
-      errorEl.style.backgroundColor = '#fef2f2';
-      errorEl.style.border = '1px solid #fecaca';
-      errorEl.style.borderRadius = '4px';
-      errorEl.style.color = '#991b1b';
+      // Add CSS class for styling
+      errorEl.classList.add('rdf-result-execution-error');
 
       this.logger.debug('Error element created', errorEl);
       return;
@@ -433,9 +431,7 @@ export class SparqlBlockProcessor extends Component {
       // Fallback for unexpected status
       const unexpectedEl = el.createDiv({ cls: 'rdf-result-unexpected' });
       unexpectedEl.textContent = `Query status: ${results.status}`;
-      unexpectedEl.style.padding = '10px';
-      unexpectedEl.style.color = '#666';
-      unexpectedEl.style.fontStyle = 'italic';
+      unexpectedEl.classList.add('rdf-result-unexpected');
     }
 
     this.logger.debug(
@@ -512,12 +508,8 @@ export class SparqlBlockProcessor extends Component {
       const emptyEl = el.createDiv({ cls: 'rdf-result-empty' });
       emptyEl.textContent = 'No results';
 
-      // Add some basic styling to ensure visibility
-      emptyEl.style.padding = '10px';
-      emptyEl.style.fontSize = '14px';
-      emptyEl.style.color = '#666';
-      emptyEl.style.fontStyle = 'italic';
-      emptyEl.style.textAlign = 'center';
+      // Add CSS class for styling
+      emptyEl.classList.add('rdf-result-empty-styled');
 
       this.logger.debug('Empty results element created', emptyEl);
       return;
