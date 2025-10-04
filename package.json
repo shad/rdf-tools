@@ -1,6 +1,6 @@
 {
 	"name": "obsidian-rdf-tools",
-	"version": "1.0.1",
+	"version": "1.0.2",
 	"description": "Work with RDF data and SPARQL queries directly in your vault. Extract turtle code blocks as knowledge graphs and query them with live-updating SPARQL results.",
 	"type": "module",
 	"main": "main.js",

@@ -1,7 +1,7 @@
 {
 	"id": "rdf-tools",
 	"name": "RDF Tools",
-	"version": "1.0.1",
+	"version": "1.0.2",
 	"minAppVersion": "0.15.0",
 	"description": "Add semantic structure to your notes using RDF Turtle blocks and interactive SPARQL queries with live-updating results.",
 	"author": "Shad Reynolds",
