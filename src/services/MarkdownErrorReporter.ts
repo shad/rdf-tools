@@ -103,7 +103,7 @@ export class MarkdownErrorReporter {
     // Error header
     const header = container.appendChild(document.createElement('div'));
     header.classList.add('rdf-error-header');
-    header.innerHTML = `🐢 Turtle Parse Error (Block ${error.blockIndex + 1}, Lines ${error.startLine + 1}-${error.endLine + 1})`;
+    header.textContent = `🐢 Turtle Parse Error (Block ${error.blockIndex + 1}, Lines ${error.startLine + 1}-${error.endLine + 1})`;
 
     // Error message
     const message = container.appendChild(document.createElement('div'));

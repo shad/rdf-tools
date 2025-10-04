@@ -381,7 +381,10 @@ export class QueryExecutorService {
       throw new Error('No sources available for query execution');
     }
 
-    const bindingsStream = await this.engine.queryBindings(query.queryString, {
+    // Use expanded query string (with PREFIX declarations) if available, otherwise fall back to original
+    const queryToExecute = query.expandedQueryString || query.queryString;
+
+    const bindingsStream = await this.engine.queryBindings(queryToExecute, {
       sources: context.sources as [Store, ...Store[]],
       signal: abortSignal,
       baseIRI: query.context.baseUri,
@@ -467,7 +470,10 @@ export class QueryExecutorService {
     options: QueryExecutionOptions,
     abortSignal: AbortSignal
   ): Promise<QueryResults> {
-    const quadStream = await this.engine.queryQuads(query.queryString, {
+    // Use expanded query string (with PREFIX declarations) if available, otherwise fall back to original
+    const queryToExecute = query.expandedQueryString || query.queryString;
+
+    const quadStream = await this.engine.queryQuads(queryToExecute, {
       sources: context.sources as [Store, ...Store[]],
       signal: abortSignal,
       baseIRI: query.context.baseUri,
@@ -527,7 +533,10 @@ export class QueryExecutorService {
     options: QueryExecutionOptions,
     abortSignal: AbortSignal
   ): Promise<QueryResults> {
-    const result = await this.engine.queryBoolean(query.queryString, {
+    // Use expanded query string (with PREFIX declarations) if available, otherwise fall back to original
+    const queryToExecute = query.expandedQueryString || query.queryString;
+
+    const result = await this.engine.queryBoolean(queryToExecute, {
       sources: context.sources as [Store, ...Store[]],
       signal: abortSignal,
       baseIRI: query.context.baseUri,

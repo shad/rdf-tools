@@ -33,6 +33,7 @@ This query uses the relative URI `<alice>` which should resolve to `<vault://peo
 
 ```sparql
 PREFIX ex: <https://example.org/>
+PREFIX shad: <https://shadr.us/foo/>
 
 SELECT ?name WHERE {
     shad:alice foaf:name ?name .

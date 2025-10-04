@@ -27,17 +27,6 @@ export class RdfToolsPlugin extends Plugin {
     // Initialize services
     this.rdfService = this.addChild(new RdfToolsService(this.app, this, this.settings, this.logger));
 
-    try {
-
-      // Status bar item for RDF Tools
-      // this.statusBarItemEl = this.addStatusBarItem();
-      // this.statusBarItemEl.setText('RDF Tools: Ready');
-    } catch (error) {
-      this.logger.error('Failed to initialize:', error);
-      this.statusBarItemEl = this.addStatusBarItem();
-      this.statusBarItemEl.setText('RDF Tools: Error');
-    }
-
     // Add settings tab
     this.addSettingTab(new RdfToolsSettingsTab(this.app, this));
 
