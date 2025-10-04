@@ -3,16 +3,13 @@
 Alice is a senior software engineer specializing in semantic web technologies.
 
 ```turtle
-@prefix foaf: <http://xmlns.com/foaf/0.1/> .
-@prefix ex: <https://example.org/> .
-
-<alice> a foaf:Person ;
+shad:alice a foaf:Person ;
     foaf:name "Alice Smith" ;
     foaf:mbox <mailto:alice@example.org> ;
     foaf:knows <bob>, <charlie> ;
     ex:title "Senior Software Engineer" ;
     ex:department "Engineering" ;
-    ex:worksOn <project-rdf>, <project-ai> ;
+    ex:worksOn shad:project-rdf, shad:project-ai ;
     ex:skill "Semantic Web", "RDF", "SPARQL", "JavaScript" .
 ```
 
@@ -21,21 +18,24 @@ Alice is a senior software engineer specializing in semantic web technologies.
 This query shows all projects Alice works on across the entire vault:
 
 ```sparql
-SELECT ?project ?projectName 
+PREFIX ex: <https://example.org/>
+SELECT *
 FROM <vault://>
 WHERE {
-    <alice> ex:worksOn ?project .
-    ?project foaf:name ?projectName .
+    ?s ex:worksOn ?project .
 }
 ```
+
 
 ## Alice's Skills (Current File Only)
 
 This query uses the relative URI `<alice>` which should resolve to `<vault://people/alice.md/alice>`:
 
 ```sparql
-SELECT ?skill WHERE {
-    <alice> ex:skill ?skill .
+PREFIX ex: <https://example.org/>
+
+SELECT ?name WHERE {
+    shad:alice foaf:name ?name .
 }
 ```
 

@@ -43,8 +43,12 @@ export class RdfToolsService extends Component {
   ) {
     super();
 
-    // Initialize prefix service with common prefixes
-    this.prefixService = new PrefixService(PrefixService.getCommonPrefixes());
+    // Initialize prefix service with merged common prefixes and global prefixes from settings
+    const mergedPrefixes = {
+      ...PrefixService.getCommonPrefixes(),
+      ...this.settings.globalPrefixes,
+    };
+    this.prefixService = new PrefixService(mergedPrefixes);
 
     // Initialize services
     this.codeBlockExtractor = new CodeBlockExtractorService();
@@ -741,6 +745,19 @@ export class RdfToolsService extends Component {
    */
   getPrefixService(): PrefixService {
     return this.prefixService;
+  }
+
+  /**
+   * Update global prefixes when settings change
+   */
+  updateGlobalPrefixes(newSettings: RdfToolsSettings): void {
+    this.settings = newSettings;
+    const mergedPrefixes = {
+      ...PrefixService.getCommonPrefixes(),
+      ...newSettings.globalPrefixes,
+    };
+    this.prefixService.updateGlobalPrefixes(mergedPrefixes);
+    this.logger.debug('Updated global prefixes from settings:', mergedPrefixes);
   }
 
   /**

@@ -7,7 +7,7 @@ Advanced machine learning platform for research and development.
 @prefix ex: <https://example.org/> .
 @prefix doap: <http://usefulinc.com/ns/doap#> .
 
-<project-ai> a doap:Project ;
+shad:project-ai a doap:Project ;
     foaf:name "AI Research Platform" ;
     doap:description "Advanced machine learning platform for research and development" ;
     doap:programming-language "Python", "TensorFlow", "PyTorch" ;

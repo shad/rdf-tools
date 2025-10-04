@@ -97,6 +97,10 @@ export class RdfToolsPlugin extends Plugin {
 
   async saveSettings() {
     await this.saveData(this.settings);
+    // Update global prefixes in the RDF service when settings change
+    if (this.rdfService) {
+      this.rdfService.updateGlobalPrefixes(this.settings);
+    }
   }
 
   /**
