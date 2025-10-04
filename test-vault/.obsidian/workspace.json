@@ -4,25 +4,25 @@
     "type": "split",
     "children": [
       {
-        "id": "a5462c804f20173b",
+        "id": "8506aa154e3ff835",
         "type": "tabs",
         "children": [
           {
-            "id": "9cd4d9c3cad6c7d4",
+            "id": "c306b6f0ed062bce",
             "type": "leaf",
             "state": {
               "type": "markdown",
               "state": {
-                "file": "cache-testing.md",
+                "file": "projects/project-ai.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "cache-testing"
+              "title": "project-ai"
             }
           },
           {
-            "id": "539107ebf1de23da",
+            "id": "eee3ba7e3fd688c4",
             "type": "leaf",
             "state": {
               "type": "markdown",
@@ -35,7 +35,8 @@
               "title": "alice"
             }
           }
-        ]
+        ],
+        "currentTab": 1
       }
     ],
     "direction": "vertical"
@@ -196,13 +197,15 @@
       "bases:Create new base": false
     }
   },
-  "active": "9cd4d9c3cad6c7d4",
+  "active": "eee3ba7e3fd688c4",
   "lastOpenFiles": [
     "people/alice.md",
-    "cache-testing.md",
-    "hellboy-universe.md",
-    "meta.md",
     "hellboy-queries.md",
+    "projects/project-ai.md",
+    "projects/project-mobile.md",
+    "hellboy-universe.md",
+    "cache-testing.md",
+    "meta.md",
     "ontology-test.md",
     "organizations/acme-corp.md",
     "steve.md",
@@ -214,8 +217,6 @@
     "base-uri-testing.md",
     "projects/project-rdf.md",
     "projects/project-nlp.md",
-    "projects/project-mobile.md",
-    "projects/project-ai.md",
     "people/diana.md",
     "people/charlie.md",
     "people/bob.md",

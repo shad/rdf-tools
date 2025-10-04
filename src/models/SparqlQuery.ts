@@ -122,6 +122,9 @@ export interface SparqlQuery {
   /** The raw SPARQL query string */
   readonly queryString: string;
 
+  /** The expanded query string with injected PREFIX declarations (used for execution) */
+  readonly expandedQueryString?: string;
+
   /** Parsed query object from sparqljs (if successfully parsed) */
   readonly parsedQuery?: ParsedSparqlQuery;
 
@@ -164,6 +167,7 @@ export interface MutableSparqlQuery
     SparqlQuery,
     | 'parsedQuery'
     | 'parseError'
+    | 'expandedQueryString'
     | 'context'
     | 'dependencies'
     | 'executionMetadata'
@@ -173,6 +177,7 @@ export interface MutableSparqlQuery
   > {
   parsedQuery?: ParsedSparqlQuery;
   parseError?: string;
+  expandedQueryString?: string;
   context: QueryContext;
   dependencies: QueryDependencies;
   executionMetadata: QueryExecutionMetadata;

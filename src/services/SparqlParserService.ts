@@ -29,6 +29,8 @@ export interface SparqlParseResult {
   success: boolean;
   /** The parsed query AST (if successful) */
   parsedQuery?: ParsedSparqlQuery;
+  /** The expanded query string with injected PREFIX declarations */
+  expandedQueryString?: string;
   /** Parsing error information (if failed) */
   error?: SparqlParseError;
   /** Query type (SELECT, CONSTRUCT, ASK, DESCRIBE) */
@@ -168,6 +170,7 @@ export class SparqlParserService {
       return {
         success: true,
         parsedQuery: parseResult.parsedQuery,
+        expandedQueryString: expandedQuery, // Store the query with injected prefixes
         queryType: parseResult.queryType,
         prefixes: parseResult.prefixes,
         fromGraphs: parseResult.fromGraphs,
@@ -259,6 +262,7 @@ export class SparqlParserService {
     // Update parsing results
     query.parsedQuery = parseResult.parsedQuery;
     query.parseError = parseResult.error?.message;
+    query.expandedQueryString = parseResult.expandedQueryString; // Store expanded query for execution
     query.lastModified = new Date();
 
     // Update context with extracted information
