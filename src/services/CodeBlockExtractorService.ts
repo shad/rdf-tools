@@ -42,22 +42,6 @@ export class CodeBlockExtractorService {
   private readonly codeBlockRegex = /```(\w+)\n([\s\S]*?)\n```/g;
 
   /**
-   * Create a placeholder TFile for utility methods that don't need real file info
-   * Note: vault is intentionally null as these placeholders are never used with vault operations
-   */
-  private createPlaceholderFile(): TFile {
-    return {
-      path: '',
-      name: '',
-      basename: '',
-      extension: '',
-      stat: { ctime: 0, mtime: 0, size: 0 },
-      vault: null as unknown as never,
-      parent: null,
-    } as TFile;
-  }
-
-  /**
    * Extract code blocks of specified languages from markdown content
    */
   extractCodeBlocks(options: ExtractCodeBlocksOptions): CodeBlock[] {
@@ -118,22 +102,6 @@ export class CodeBlockExtractorService {
   }
 
   /**
-   * Check if content contains code blocks of specified languages
-   */
-  hasCodeBlocks(
-    content: string,
-    languages: string[] = ['turtle', 'sparql']
-  ): boolean {
-    const blocks = this.extractCodeBlocks({
-      file: this.createPlaceholderFile(),
-      content,
-      languages,
-    });
-
-    return blocks.length > 0;
-  }
-
-  /**
    * Get the line and column positions where a code block starts and ends
    */
   private findBlockLocation(
@@ -185,98 +153,6 @@ export class CodeBlockExtractorService {
       startColumn,
       endColumn,
     };
-  }
-
-  /**
-   * Update existing code block with new content, preserving location
-   */
-  updateCodeBlock(existingBlock: CodeBlock, newContent: string): CodeBlock {
-    return {
-      ...existingBlock,
-      content: newContent,
-    };
-  }
-
-  /**
-   * Check if a position is within a code block
-   */
-  isPositionInCodeBlock(
-    content: string,
-    line: number,
-    column: number,
-    languages: string[] = ['turtle', 'sparql']
-  ): { inBlock: boolean; block?: CodeBlock } {
-    const blocks = this.extractCodeBlocks({
-      file: this.createPlaceholderFile(),
-      content,
-      languages,
-    });
-
-    for (const block of blocks) {
-      const loc = block.location;
-      if (
-        line >= loc.startLine &&
-        line <= loc.endLine &&
-        (line !== loc.startLine || column >= loc.startColumn) &&
-        (line !== loc.endLine || column <= loc.endColumn)
-      ) {
-        return { inBlock: true, block };
-      }
-    }
-
-    return { inBlock: false };
-  }
-
-  /**
-   * Get statistics about code blocks in content
-   */
-  getCodeBlockStats(content: string): {
-    totalBlocks: number;
-    turtleBlocks: number;
-    sparqlBlocks: number;
-    otherBlocks: number;
-  } {
-    const allBlocks = this.extractCodeBlocks({
-      file: this.createPlaceholderFile(),
-      content,
-      languages: [], // Extract all languages for stats
-    });
-
-    const turtleBlocks = allBlocks.filter(b => b.language === 'turtle').length;
-    const sparqlBlocks = allBlocks.filter(b => b.language === 'sparql').length;
-    const otherBlocks = allBlocks.length - turtleBlocks - sparqlBlocks;
-
-    return {
-      totalBlocks: allBlocks.length,
-      turtleBlocks,
-      sparqlBlocks,
-      otherBlocks,
-    };
-  }
-
-  /**
-   * Create a TurtleBlock from raw content (for callback usage)
-   */
-  createTurtleBlockFromContent(
-    content: string,
-    file: TFile,
-    startLine: number,
-    endLine: number
-  ): ReturnType<typeof TurtleBlockFactory.createTurtleBlock> {
-    const location: BlockLocation = {
-      file,
-      startLine,
-      endLine,
-      startColumn: 0,
-      endColumn: 0,
-    };
-
-    const createOptions: CreateTurtleBlockOptions = {
-      location,
-      content,
-    };
-
-    return TurtleBlockFactory.createTurtleBlock(createOptions);
   }
 
   /**

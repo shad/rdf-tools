@@ -20,6 +20,7 @@ export class Logger {
 
   /**
    * Update logger settings (useful when settings change)
+   * @public - Available for future use when settings change dynamically
    */
   updateSettings(settings: RdfToolsSettings): void {
     this.enableDebugLogging = settings.enableDebugLogging;

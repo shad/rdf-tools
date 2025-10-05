@@ -18,8 +18,8 @@ export class GraphService {
   private metaGraphService: MetaGraphService;
 
   constructor(
-    private app: App,
-    private prefixService: PrefixService,
+    app: App,
+    prefixService: PrefixService,
     private logger: Logger
   ) {
     this.vaultGraphService = new VaultGraphService(app, prefixService, logger);

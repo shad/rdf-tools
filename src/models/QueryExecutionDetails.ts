@@ -67,17 +67,3 @@ export interface QueryExecutionDetails {
   /** Timestamp when the query was executed */
   executionTimestamp: Date;
 }
-
-/**
- * Options for generating query execution details
- */
-export interface QueryExecutionDetailsOptions {
-  /** Whether to include detailed graph statistics */
-  includeGraphStats?: boolean;
-  /** Whether to include memory usage estimates */
-  includeMemoryUsage?: boolean;
-  /** Whether to analyze query complexity */
-  analyzeComplexity?: boolean;
-  /** Whether to collect performance metrics */
-  collectMetrics?: boolean;
-}

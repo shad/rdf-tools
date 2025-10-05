@@ -12,6 +12,7 @@ export class SparqlQueryDetailsModal extends Modal {
     super(app);
   }
 
+  /** @public - Called by Obsidian when modal opens */
   onOpen() {
     const { contentEl } = this;
     contentEl.empty();
@@ -50,6 +51,7 @@ export class SparqlQueryDetailsModal extends Modal {
     });
   }
 
+  /** @public - Called by Obsidian when modal closes */
   onClose() {
     const { contentEl } = this;
     contentEl.empty();

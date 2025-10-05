@@ -131,75 +131,6 @@ export class MarkdownGraphParser {
   }
 
   /**
-   * Extract turtle code blocks from markdown content
-   */
-  private extractTurtleBlocks(markdownContent: string): Array<{
-    index: number;
-    content: string;
-    startLine: number;
-    endLine: number;
-  }> {
-    const blocks: Array<{
-      index: number;
-      content: string;
-      startLine: number;
-      endLine: number;
-    }> = [];
-
-    const lines = markdownContent.split('\n');
-    let inTurtleBlock = false;
-    let currentBlock: string[] = [];
-    let blockStartLine = -1;
-    let blockIndex = 0;
-
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-
-      if (line.trim().startsWith('```turtle')) {
-        if (inTurtleBlock) {
-          // Malformed - nested blocks, end current block
-          if (currentBlock.length > 0) {
-            blocks.push({
-              index: blockIndex++,
-              content: currentBlock.join('\n'),
-              startLine: blockStartLine,
-              endLine: i - 1,
-            });
-          }
-        }
-        inTurtleBlock = true;
-        currentBlock = [];
-        blockStartLine = i + 1;
-      } else if (inTurtleBlock && line.trim().startsWith('```')) {
-        // End of turtle block
-        blocks.push({
-          index: blockIndex++,
-          content: currentBlock.join('\n'),
-          startLine: blockStartLine,
-          endLine: i - 1,
-        });
-        inTurtleBlock = false;
-        currentBlock = [];
-        blockStartLine = -1;
-      } else if (inTurtleBlock) {
-        currentBlock.push(line);
-      }
-    }
-
-    // Handle unclosed block
-    if (inTurtleBlock && currentBlock.length > 0) {
-      blocks.push({
-        index: blockIndex++,
-        content: currentBlock.join('\n'),
-        startLine: blockStartLine,
-        endLine: lines.length - 1,
-      });
-    }
-
-    return blocks;
-  }
-
-  /**
    * Parse a single turtle block and add results to the overall result
    */
   private async parseTurtleBlock(
@@ -320,6 +251,7 @@ export class MarkdownGraphParser {
 
   /**
    * Get prefixes from the parsed result (N3.Parser compatibility method)
+   * @public - Used in tests for verification
    */
   static getPrefixes(result: MarkdownParseResult): Record<string, string> {
     return result.prefixes;
@@ -327,6 +259,7 @@ export class MarkdownGraphParser {
 
   /**
    * Get quads from the parsed result (N3.Parser compatibility method)
+   * @public - Used in tests for verification
    */
   static getQuads(result: MarkdownParseResult): Quad[] {
     return result.quads;

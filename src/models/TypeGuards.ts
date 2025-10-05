@@ -44,18 +44,6 @@ export function isTFolder(
 }
 
 /**
- * Type guard to check if an abstract file exists and is valid
- *
- * @param file - The abstract file to check
- * @returns true if the file is not null/undefined
- */
-export function isValidAbstractFile(
-  file: TAbstractFile | null | undefined
-): file is TAbstractFile {
-  return file !== null && file !== undefined;
-}
-
-/**
  * Utility function to safely get a TFile from a path
  *
  * @param vault - The Obsidian vault
@@ -68,63 +56,4 @@ export function safeTFileFromPath(
 ): TFile | null {
   const abstractFile = vault.getAbstractFileByPath(path);
   return isTFile(abstractFile) ? abstractFile : null;
-}
-
-/**
- * Utility function to safely get a TFolder from a path
- *
- * @param vault - The Obsidian vault
- * @param path - The folder path
- * @returns TFolder if valid, null otherwise
- */
-export function safeTFolderFromPath(
-  vault: { getAbstractFileByPath: (path: string) => TAbstractFile | null },
-  path: string
-): TFolder | null {
-  const abstractFile = vault.getAbstractFileByPath(path);
-  return isTFolder(abstractFile) ? abstractFile : null;
-}
-
-/**
- * Type guard with error message generation
- *
- * @param file - The abstract file to check
- * @param expectedType - The expected type ('file' or 'folder')
- * @returns object with isValid boolean and error message if invalid
- */
-export function validateFileType(
-  file: TAbstractFile | null | undefined,
-  expectedType: 'file' | 'folder'
-): { isValid: boolean; error?: string; file?: TFile | TFolder } {
-  if (!isValidAbstractFile(file)) {
-    return {
-      isValid: false,
-      error: 'File not found or is null/undefined',
-    };
-  }
-
-  if (expectedType === 'file') {
-    if (isTFile(file)) {
-      return { isValid: true, file };
-    }
-    return {
-      isValid: false,
-      error: `Expected file but found ${isTFolder(file) ? 'folder' : 'unknown type'}: ${file.path}`,
-    };
-  }
-
-  if (expectedType === 'folder') {
-    if (isTFolder(file)) {
-      return { isValid: true, file };
-    }
-    return {
-      isValid: false,
-      error: `Expected folder but found ${isTFile(file) ? 'file' : 'unknown type'}: ${file.path}`,
-    };
-  }
-
-  return {
-    isValid: false,
-    error: `Invalid expectedType: ${expectedType}`,
-  };
 }

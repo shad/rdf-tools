@@ -757,13 +757,6 @@ export class RdfToolsService extends Component {
   }
 
   /**
-   * Get the SPARQL query tracker service
-   */
-  getSparqlQueryTracker(): SparqlQueryTracker {
-    return this.sparqlQueryTracker;
-  }
-
-  /**
    * Get the prefix service
    */
   getPrefixService(): PrefixService {

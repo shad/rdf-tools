@@ -14,10 +14,10 @@ import { Logger } from './utils/Logger';
 
 export class RdfToolsPlugin extends Plugin {
   settings!: RdfToolsSettings;
-  statusBarItemEl!: HTMLElement;
   rdfService!: RdfToolsService;
   logger!: Logger;
 
+  /** @public - Called by Obsidian when plugin loads */
   async onload() {
     await this.loadSettings();
 
@@ -72,6 +72,7 @@ export class RdfToolsPlugin extends Plugin {
     this.logger.info('plugin loaded successfully');
   }
 
+  /** @public - Called by Obsidian when plugin unloads */
   async onunload() {
     if (this.rdfService) {
       await this.rdfService.onunload();

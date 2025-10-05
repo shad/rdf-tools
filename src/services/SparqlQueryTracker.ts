@@ -114,13 +114,6 @@ export class SparqlQueryTracker {
   }
 
   /**
-   * Get query info by ID
-   */
-  getQueryById(queryId: string): SparqlQueryInfo | undefined {
-    return this.queryById.get(queryId);
-  }
-
-  /**
    * Mark query as executing
    */
   setQueryExecuting(queryId: string, isExecuting: boolean): void {
@@ -148,21 +141,6 @@ export class SparqlQueryTracker {
    */
   getAllQueries(): SparqlQueryInfo[] {
     return Array.from(this.queryById.values());
-  }
-
-  /**
-   * Get stats about tracked queries
-   */
-  getStats(): {
-    totalQueries: number;
-    queriesByFile: number;
-    dependencyGraphs: number;
-  } {
-    return {
-      totalQueries: this.queryById.size,
-      queriesByFile: this.queriesByFile.size,
-      dependencyGraphs: this.queriesByGraph.size,
-    };
   }
 
   /**

@@ -281,13 +281,6 @@ export class QueryExecutorService {
   }
 
   /**
-   * Check if a query is currently executing
-   */
-  isExecuting(queryId: string): boolean {
-    return this.activeExecutions.has(queryId);
-  }
-
-  /**
    * Execute query with single store containing named graphs (the correct RDF approach)
    */
   private async executeQueryWithSources(
@@ -460,7 +453,7 @@ export class QueryExecutorService {
   private async executeConstructQuery(
     query: SparqlQuery,
     context: { sources: Store[] },
-    options: QueryExecutionOptions,
+    _options: QueryExecutionOptions,
     abortSignal: AbortSignal
   ): Promise<QueryResults> {
     // Use expanded query string (with PREFIX declarations) if available, otherwise fall back to original
@@ -523,7 +516,7 @@ export class QueryExecutorService {
   private async executeAskQuery(
     query: SparqlQuery,
     context: { sources: Store[] },
-    options: QueryExecutionOptions,
+    _options: QueryExecutionOptions,
     abortSignal: AbortSignal
   ): Promise<QueryResults> {
     // Use expanded query string (with PREFIX declarations) if available, otherwise fall back to original
@@ -537,33 +530,6 @@ export class QueryExecutorService {
 
     // Use pure function for result formatting
     return formatAskResults(result);
-  }
-
-  /**
-   * Format an RDF term for turtle output
-   */
-  private formatTerm(
-    term: Quad['subject'] | Quad['predicate'] | Quad['object']
-  ): string {
-    switch (term.termType) {
-      case 'NamedNode':
-        return `<${term.value}>`;
-      case 'BlankNode':
-        return `_:${term.value}`;
-      case 'Literal':
-        if (
-          term.datatype &&
-          term.datatype.value !== 'http://www.w3.org/2001/XMLSchema#string'
-        ) {
-          return `"${term.value}"^^<${term.datatype.value}>`;
-        } else if (term.language) {
-          return `"${term.value}"@${term.language}`;
-        } else {
-          return `"${term.value}"`;
-        }
-      default:
-        return term.value;
-    }
   }
 
   /**

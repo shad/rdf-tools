@@ -20,7 +20,7 @@ export class MetaGraphService {
 
   constructor(
     private app: App,
-    private prefixService: PrefixService,
+    _prefixService: PrefixService,
     private logger: Logger
   ) {}
 
@@ -352,17 +352,5 @@ export class MetaGraphService {
     }
 
     return links;
-  }
-
-  /**
-   * Get prefixes used in metadata generation
-   */
-  private getMetadataPrefixes(): Record<string, string> {
-    return {
-      vault: 'http://shadr.us/ns/rdf-tools/v1#',
-      rdf: 'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
-      rdfs: 'http://www.w3.org/2000/01/rdf-schema#',
-      xsd: 'http://www.w3.org/2001/XMLSchema#',
-    };
   }
 }

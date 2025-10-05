@@ -130,9 +130,10 @@ src/
 
 ### Code Quality Standards
 - **TypeScript Strict Mode**: Enforce strict typing throughout codebase, no `any` types
+- **Unused Code Detection**: Knip detects unused exports, class members, and dependencies
 - **ESLint Rules**: Comprehensive linting with TypeScript-specific rules
 - **Prettier Formatting**: Consistent code formatting (single quotes, 80-char width, 2-space tabs)
-- **All-in-One Quality Check**: Use `npm run check-all` to format, fix lint issues, and type check in one command
+- **All-in-One Quality Check**: Use `npm run check-all` to format, lint, detect unused code, type check, and test in one command
 
 ### Testing Strategy
 - **Unit Tests**: Test individual services and models with mocked dependencies

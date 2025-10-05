@@ -1,4 +1,4 @@
-import { Parser, SparqlQuery as ParsedSparqlQuery } from 'sparqljs';
+import { SparqlQuery as ParsedSparqlQuery } from 'sparqljs';
 import { SparqlQuery, MutableSparqlQuery } from '../models/SparqlQuery';
 import { PrefixService } from './PrefixService';
 import { parseSparqlQuery } from '../utils/parsing';
@@ -85,11 +85,7 @@ export interface SparqlDependencyInfo {
  * Handles SPARQL syntax validation, error reporting, and query analysis
  */
 export class SparqlParserService {
-  private parser: InstanceType<typeof Parser>;
-
-  constructor(private prefixService: PrefixService) {
-    this.parser = new Parser();
-  }
+  constructor(private prefixService: PrefixService) {}
 
   /**
    * Parse SPARQL content from a SparqlQuery model
@@ -187,21 +183,6 @@ export class SparqlParserService {
         ),
         parseTimeMs,
       };
-    }
-  }
-
-  /**
-   * Validate SPARQL syntax without full parsing (quick check)
-   */
-  async validateSparqlSyntax(
-    queryString: string,
-    baseUri?: string
-  ): Promise<boolean> {
-    try {
-      const result = await this.parseSparqlContent(queryString, { baseUri });
-      return result.success;
-    } catch {
-      return false;
     }
   }
 
@@ -308,83 +289,6 @@ export class SparqlParserService {
         }
       });
     }
-  }
-
-  /**
-   * Get query statistics and analysis
-   */
-  async getSparqlQueryStats(queryString: string): Promise<{
-    valid: boolean;
-    queryType?: string;
-    prefixCount: number;
-    variableCount: number;
-    hasFromClauses: boolean;
-    hasSubqueries: boolean;
-    hasOptional: boolean;
-    hasUnion: boolean;
-    hasFilters: boolean;
-    estimatedComplexity: 'low' | 'medium' | 'high';
-    parseTimeMs: number;
-  }> {
-    const result = await this.parseSparqlContent(queryString);
-
-    if (!result.success) {
-      return {
-        valid: false,
-        prefixCount: 0,
-        variableCount: 0,
-        hasFromClauses: false,
-        hasSubqueries: false,
-        hasOptional: false,
-        hasUnion: false,
-        hasFilters: false,
-        estimatedComplexity: 'low',
-        parseTimeMs: result.parseTimeMs,
-      };
-    }
-
-    const queryStr = queryString.toLowerCase();
-    const variableMatches = queryString.match(/\?\w+/g);
-    const variableCount = variableMatches ? new Set(variableMatches).size : 0;
-
-    // Estimate complexity based on query features
-    let complexityScore = 0;
-    if (queryStr.includes('optional')) complexityScore += 2;
-    if (queryStr.includes('union')) complexityScore += 2;
-    if (queryStr.includes('filter')) complexityScore += 1;
-    if (
-      queryStr.includes('subquery') ||
-      (queryStr.includes('{') && queryStr.includes('}'))
-    )
-      complexityScore += 3;
-    if (variableCount > 5) complexityScore += 1;
-    if (result.fromGraphs && result.fromGraphs.length > 1) complexityScore += 1;
-
-    let estimatedComplexity: 'low' | 'medium' | 'high' = 'low';
-    if (complexityScore >= 5) {
-      estimatedComplexity = 'high';
-    } else if (complexityScore >= 2) {
-      estimatedComplexity = 'medium';
-    }
-
-    return {
-      valid: true,
-      queryType: result.queryType,
-      prefixCount: Object.keys(result.prefixes || {}).length,
-      variableCount,
-      hasFromClauses:
-        (result.fromGraphs && result.fromGraphs.length > 0) ||
-        (result.fromNamedGraphs && result.fromNamedGraphs.length > 0) ||
-        false,
-      hasSubqueries:
-        queryStr.includes('subquery') ||
-        (queryStr.match(/{[^}]*{/g) || []).length > 0,
-      hasOptional: queryStr.includes('optional'),
-      hasUnion: queryStr.includes('union'),
-      hasFilters: queryStr.includes('filter'),
-      estimatedComplexity,
-      parseTimeMs: result.parseTimeMs,
-    };
   }
 
   /**

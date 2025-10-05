@@ -12,7 +12,10 @@
     "src/tests/helpers/**"
   ],
   "ignoreDependencies": [
-    "obsidian"
+    "obsidian",
+    "@comunica/query-sparql",
+    "@typescript-eslint/eslint-plugin",
+    "@typescript-eslint/parser"
   ],
   "ignoreBinaries": [
     "eslint"
@@ -25,6 +28,9 @@
     "RdfToolsPlugin.statusBarItemEl",
     "SparqlQueryDetailsModal.onOpen",
     "SparqlQueryDetailsModal.onClose",
+    "RdfToolsSettingsTab.display",
+    "MarkdownGraphParser.getPrefixes",
+    "MarkdownGraphParser.getQuads",
     "Logger.updateSettings"
   ]
 }
