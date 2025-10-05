@@ -1,170 +1,358 @@
-@prefix vault: <http://shadr.us/ns/rdf-tools/v1#> .
+@prefix rdftools: <http://shadr.us/ns/rdf-tools/v1#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 @prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
 
-# Core Classes
-vault:Resource a rdfs:Class ;
-    rdfs:label "Vault Resource" ;
-    rdfs:comment "Any resource within the vault" .
+##############################################################################
+#
+# RDF Tools for Obsidian - Ontology Version 1.0
+#
+# This ontology defines the semantic vocabulary for representing Obsidian vault
+# resources and their relationships as RDF (Resource Description Framework) data.
+#
+# PURPOSE:
+# Enable semantic web technologies within Obsidian by providing a standardized
+# vocabulary for describing notes, files, directories, links, tags, and metadata.
+# This allows users to query their vault using SPARQL and integrate with other
+# semantic web tools and knowledge graphs.
+#
+# NAMESPACE:
+# http://shadr.us/ns/rdf-tools/v1#
+#
+# ONTOLOGY URI:
+# http://shadr.us/ns/rdf-tools/v1
+#
+# PREFIX CONVENTION:
+# rdftools: (recommended for use in SPARQL queries and Turtle blocks)
+#
+# DESIGN PRINCIPLES:
+# - Hierarchical class structure (Resource → File/Directory → Note/Attachment)
+# - Clear separation between structural (files/folders) and semantic (links/tags)
+# - Compatible with RDFS and OWL for reasoning and inference
+# - Reuses standard vocabularies (Dublin Core) where appropriate
+# - Extensible for custom properties and relationships
+# - Preserves Obsidian-specific concepts (wiki links, frontmatter, etc.)
+#
+# USAGE:
+# This ontology is automatically loaded into the meta:// graph and available
+# to all SPARQL queries. It describes the structure of vault metadata exposed
+# through the vault:// graph URIs.
+#
+# STANDARD VOCABULARY REUSE:
+# - dcterms:created and dcterms:modified for timestamps
+# - dcterms:title for ontology metadata
+# - owl:inverseOf for bidirectional relationships
+# - owl:FunctionalProperty for single-valued properties
+#
+# VERSION: 1.0
+# CREATED: 2025-01-05
+# AUTHOR: RDF Tools Plugin for Obsidian
+# LICENSE: MIT
+#
+##############################################################################
 
-vault:File a rdfs:Class ;
-    rdfs:subClassOf vault:Resource ;
-    rdfs:label "File" .
+##############################################################################
+# ONTOLOGY DECLARATION
+##############################################################################
 
-vault:Directory a rdfs:Class ;
-    rdfs:subClassOf vault:Resource ;
-    rdfs:label "Directory" .
+<http://shadr.us/ns/rdf-tools/v1> a owl:Ontology ;
+    rdfs:label "RDF Tools Vault Ontology"@en ;
+    rdfs:comment "An ontology for describing Obsidian vault resources using semantic web standards"@en ;
+    dcterms:title "RDF Tools for Obsidian - Vault Ontology v1.0"@en ;
+    dcterms:description "Provides classes and properties for representing notes, files, links, tags, and metadata as RDF triples"@en ;
+    dcterms:created "2025-01-05"^^xsd:date ;
+    dcterms:license <https://opensource.org/licenses/MIT> ;
+    owl:versionInfo "1.0" ;
+    owl:versionIRI <http://shadr.us/ns/rdf-tools/v1> .
 
-vault:Note a rdfs:Class ;
-    rdfs:subClassOf vault:File ;
-    rdfs:label "Markdown Note" .
+##############################################################################
+# CORE CLASSES - Fundamental Resource Types
+##############################################################################
 
-vault:Attachment a rdfs:Class ;
-    rdfs:subClassOf vault:File ;
-    rdfs:label "Attachment" .
+rdftools:Resource a owl:Class ;
+    rdfs:label "Vault Resource"@en ;
+    rdfs:comment "The base class for all resources within an Obsidian vault. Any file, directory, or vault entity is a Resource. This serves as the root of the class hierarchy."@en ;
+    rdfs:isDefinedBy <http://shadr.us/ns/rdf-tools/v1> .
 
-# Link Classes
-vault:Link a rdfs:Class ;
-    rdfs:label "Link between resources" .
+rdftools:File a owl:Class ;
+    rdfs:subClassOf rdftools:Resource ;
+    rdfs:label "File"@en ;
+    rdfs:comment "A file stored in the vault's file system. Files have paths, names, timestamps, and sizes. Subclasses include Note and Attachment for specific file types."@en ;
+    rdfs:isDefinedBy <http://shadr.us/ns/rdf-tools/v1> ;
+    owl:disjointWith rdftools:Directory .
 
-vault:WikiLink a rdfs:Class ;
-    rdfs:subClassOf vault:Link ;
-    rdfs:label "Wiki-style [[link]]" .
+rdftools:Directory a owl:Class ;
+    rdfs:subClassOf rdftools:Resource ;
+    rdfs:label "Directory"@en ;
+    rdfs:comment "A directory (folder) in the vault that can contain other files and directories. Directories organize resources hierarchically and are represented by vault:// URIs ending with a slash."@en ;
+    rdfs:isDefinedBy <http://shadr.us/ns/rdf-tools/v1> .
 
-vault:ExternalLink a rdfs:Class ;
-    rdfs:subClassOf vault:Link ;
-    rdfs:label "External URL" .
+rdftools:Note a owl:Class ;
+    rdfs:subClassOf rdftools:File ;
+    rdfs:label "Markdown Note"@en ;
+    rdfs:comment "A markdown (.md) file that serves as a note in Obsidian. Notes are the primary content type and can contain wiki links, tags, frontmatter properties, headings, and other structured content."@en ;
+    rdfs:isDefinedBy <http://shadr.us/ns/rdf-tools/v1> ;
+    owl:disjointWith rdftools:Attachment .
 
-# Content Structure Classes
-vault:Section a rdfs:Class ;
-    rdfs:label "Document Section" .
+rdftools:Attachment a owl:Class ;
+    rdfs:subClassOf rdftools:File ;
+    rdfs:label "Attachment"@en ;
+    rdfs:comment "A non-markdown file (image, PDF, etc.) attached to the vault. Attachments can be referenced by notes but do not contain markdown content."@en ;
+    rdfs:isDefinedBy <http://shadr.us/ns/rdf-tools/v1> .
 
-vault:Heading a rdfs:Class ;
-    rdfs:subClassOf vault:Section ;
-    rdfs:label "Heading" .
+##############################################################################
+# LINK CLASSES - Relationships Between Resources
+##############################################################################
 
-vault:Paragraph a rdfs:Class ;
-    rdfs:label "Paragraph" .
+rdftools:Link a owl:Class ;
+    rdfs:label "Link between resources"@en ;
+    rdfs:comment "An abstract class representing any link or reference from one resource to another. Subclasses define specific link types like wiki links and external URLs."@en ;
+    rdfs:isDefinedBy <http://shadr.us/ns/rdf-tools/v1> .
 
-vault:ListItem a rdfs:Class ;
-    rdfs:label "List Item" .
+rdftools:WikiLink a owl:Class ;
+    rdfs:subClassOf rdftools:Link ;
+    rdfs:label "Wiki-style [[link]]"@en ;
+    rdfs:comment "An Obsidian-style wiki link using [[double brackets]] syntax. These internal links connect notes within the vault and are the foundation of the knowledge graph."@en ;
+    rdfs:isDefinedBy <http://shadr.us/ns/rdf-tools/v1> ;
+    owl:disjointWith rdftools:ExternalLink .
 
-vault:TodoItem a rdfs:Class ;
-    rdfs:subClassOf vault:ListItem ;
-    rdfs:label "Todo Item" .
+rdftools:ExternalLink a owl:Class ;
+    rdfs:subClassOf rdftools:Link ;
+    rdfs:label "External URL"@en ;
+    rdfs:comment "A link to an external resource outside the vault, typically using standard markdown [text](URL) or <URL> syntax. Points to web pages, documents, or other external content."@en ;
+    rdfs:isDefinedBy <http://shadr.us/ns/rdf-tools/v1> .
 
-vault:Tag a rdfs:Class ;
-    rdfs:label "Tag" .
+##############################################################################
+# CONTENT STRUCTURE CLASSES - Document Organization
+##############################################################################
 
-vault:Property a rdfs:Class ;
-    rdfs:label "Frontmatter Property" .
+rdftools:Section a owl:Class ;
+    rdfs:label "Document Section"@en ;
+    rdfs:comment "A logical section or block within a note. Sections organize content hierarchically and can include headings, paragraphs, lists, and other structural elements."@en ;
+    rdfs:isDefinedBy <http://shadr.us/ns/rdf-tools/v1> .
 
-# Core Properties
-vault:path a rdfs:Property ;
-    rdfs:domain vault:Resource ;
+rdftools:Heading a owl:Class ;
+    rdfs:subClassOf rdftools:Section ;
+    rdfs:label "Heading"@en ;
+    rdfs:comment "A markdown heading (# through ######) that provides structure and navigation within a note. Headings have levels (1-6) and text content."@en ;
+    rdfs:isDefinedBy <http://shadr.us/ns/rdf-tools/v1> .
+
+rdftools:Paragraph a owl:Class ;
+    rdfs:subClassOf rdftools:Section ;
+    rdfs:label "Paragraph"@en ;
+    rdfs:comment "A block of continuous text within a note. Paragraphs are the basic unit of written content in markdown."@en ;
+    rdfs:isDefinedBy <http://shadr.us/ns/rdf-tools/v1> .
+
+rdftools:ListItem a owl:Class ;
+    rdfs:label "List Item"@en ;
+    rdfs:comment "An item in a bulleted or numbered list. List items can be nested and may contain additional formatting or links."@en ;
+    rdfs:isDefinedBy <http://shadr.us/ns/rdf-tools/v1> .
+
+rdftools:TodoItem a owl:Class ;
+    rdfs:subClassOf rdftools:ListItem ;
+    rdfs:label "Todo Item"@en ;
+    rdfs:comment "A checklist item using - [ ] or - [x] syntax. Todo items track completion status and are commonly used for task management in Obsidian."@en ;
+    rdfs:isDefinedBy <http://shadr.us/ns/rdf-tools/v1> .
+
+rdftools:Tag a owl:Class ;
+    rdfs:label "Tag"@en ;
+    rdfs:comment "A tag assigned to a note using #hashtag syntax or frontmatter. Tags enable categorization and filtering of notes across the vault."@en ;
+    rdfs:isDefinedBy <http://shadr.us/ns/rdf-tools/v1> .
+
+rdftools:Property a owl:Class ;
+    rdfs:label "Frontmatter Property"@en ;
+    rdfs:comment "A YAML frontmatter property defined at the beginning of a note. Properties store structured metadata like dates, categories, authors, or custom fields."@en ;
+    rdfs:isDefinedBy <http://shadr.us/ns/rdf-tools/v1> .
+
+##############################################################################
+# CORE PROPERTIES - Basic Resource Attributes
+##############################################################################
+
+rdftools:path a owl:DatatypeProperty, owl:FunctionalProperty ;
+    rdfs:domain rdftools:Resource ;
     rdfs:range xsd:string ;
-    rdfs:label "File system path" .
+    rdfs:label "file system path"@en ;
+    rdfs:comment "The relative file system path of a resource within the vault, e.g., 'people/alice.md' or 'images/diagram.png'. This uniquely identifies the resource's location."@en ;
+    rdfs:isDefinedBy <http://shadr.us/ns/rdf-tools/v1> .
 
-vault:name a rdfs:Property ;
-    rdfs:domain vault:Resource ;
+rdftools:name a owl:DatatypeProperty, owl:FunctionalProperty ;
+    rdfs:domain rdftools:Resource ;
     rdfs:range xsd:string ;
-    rdfs:label "Resource name" .
+    rdfs:label "resource name"@en ;
+    rdfs:comment "The filename of a resource, typically the filename without extension for notes or the full filename for other resources. For display names, use rdfs:label."@en ;
+    rdfs:isDefinedBy <http://shadr.us/ns/rdf-tools/v1> .
 
-vault:created a rdfs:Property ;
-    rdfs:domain vault:Resource ;
-    rdfs:range xsd:dateTime ;
-    rdfs:label "Creation timestamp" .
+rdftools:size a owl:DatatypeProperty, owl:FunctionalProperty ;
+    rdfs:domain rdftools:File ;
+    rdfs:range xsd:nonNegativeInteger ;
+    rdfs:label "file size in bytes"@en ;
+    rdfs:comment "The size of the file in bytes. Useful for finding large files, tracking vault growth, or filtering queries by file size."@en ;
+    rdfs:isDefinedBy <http://shadr.us/ns/rdf-tools/v1> .
 
-vault:modified a rdfs:Property ;
-    rdfs:domain vault:Resource ;
-    rdfs:range xsd:dateTime ;
-    rdfs:label "Last modified timestamp" .
+##############################################################################
+# RELATIONSHIP PROPERTIES - Connections Between Resources
+##############################################################################
 
-vault:size a rdfs:Property ;
-    rdfs:domain vault:File ;
+rdftools:linksTo a owl:ObjectProperty ;
+    rdfs:domain rdftools:Note ;
+    rdfs:range rdftools:Resource ;
+    rdfs:label "links to"@en ;
+    rdfs:comment "Indicates that this note contains a link to another resource. The target can be another note, an attachment, or a directory. This creates the vault's knowledge graph structure."@en ;
+    rdfs:isDefinedBy <http://shadr.us/ns/rdf-tools/v1> ;
+    owl:inverseOf rdftools:backlinkedFrom .
+
+rdftools:backlinkedFrom a owl:ObjectProperty ;
+    rdfs:domain rdftools:Resource ;
+    rdfs:range rdftools:Note ;
+    rdfs:label "backlinked from"@en ;
+    rdfs:comment "Inverse of linksTo. Indicates that this resource is referenced by another note. Backlinks show which notes mention or link to a given resource."@en ;
+    rdfs:isDefinedBy <http://shadr.us/ns/rdf-tools/v1> ;
+    owl:inverseOf rdftools:linksTo .
+
+rdftools:contains a owl:ObjectProperty ;
+    rdfs:domain rdftools:Directory ;
+    rdfs:range rdftools:Resource ;
+    rdfs:label "contains"@en ;
+    rdfs:comment "Indicates that a directory contains a file or subdirectory. This property builds the hierarchical structure of the vault's file system."@en ;
+    rdfs:isDefinedBy <http://shadr.us/ns/rdf-tools/v1> ;
+    owl:inverseOf rdftools:parentDirectory .
+
+rdftools:parentDirectory a owl:ObjectProperty, owl:FunctionalProperty ;
+    rdfs:domain rdftools:Resource ;
+    rdfs:range rdftools:Directory ;
+    rdfs:label "parent directory"@en ;
+    rdfs:comment "Inverse of contains. Points from a resource to its immediate parent directory. Every resource except the vault root has exactly one parent directory."@en ;
+    rdfs:isDefinedBy <http://shadr.us/ns/rdf-tools/v1> ;
+    owl:inverseOf rdftools:contains .
+
+rdftools:hasTag a owl:ObjectProperty ;
+    rdfs:domain rdftools:Note ;
+    rdfs:range rdftools:Tag ;
+    rdfs:label "has tag"@en ;
+    rdfs:comment "Indicates that a note is tagged with a specific tag. Tags appear as #hashtag in the note content or in frontmatter. Multiple tags can be assigned to a single note."@en ;
+    rdfs:isDefinedBy <http://shadr.us/ns/rdf-tools/v1> .
+
+rdftools:hasProperty a owl:ObjectProperty ;
+    rdfs:domain rdftools:Note ;
+    rdfs:range rdftools:Property ;
+    rdfs:label "has property"@en ;
+    rdfs:comment "Indicates that a note has a specific frontmatter property. Properties store structured metadata in YAML format at the beginning of the note."@en ;
+    rdfs:isDefinedBy <http://shadr.us/ns/rdf-tools/v1> .
+
+##############################################################################
+# CONTENT STRUCTURE PROPERTIES - Document Organization
+##############################################################################
+
+rdftools:hasSection a owl:ObjectProperty ;
+    rdfs:domain rdftools:Note ;
+    rdfs:range rdftools:Section ;
+    rdfs:label "has section"@en ;
+    rdfs:comment "Indicates that a note contains a specific section (heading, paragraph, list, etc.). Sections organize the note's content into navigable blocks."@en ;
+    rdfs:isDefinedBy <http://shadr.us/ns/rdf-tools/v1> .
+
+rdftools:headingLevel a owl:DatatypeProperty, owl:FunctionalProperty ;
+    rdfs:domain rdftools:Heading ;
     rdfs:range xsd:integer ;
-    rdfs:label "File size in bytes" .
+    rdfs:label "heading level"@en ;
+    rdfs:comment "The level of a markdown heading, from 1 (# top level) to 6 (###### lowest level). Heading levels create the document outline hierarchy."@en ;
+    rdfs:isDefinedBy <http://shadr.us/ns/rdf-tools/v1> .
 
-# Relationship Properties
-vault:linksTo a rdfs:Property ;
-    rdfs:domain vault:Note ;
-    rdfs:range vault:Resource ;
-    rdfs:label "Links to another resource" .
-
-vault:backlinkedFrom a rdfs:Property ;
-    rdfs:domain vault:Resource ;
-    rdfs:range vault:Note ;
-    rdfs:label "Has backlink from" .
-
-vault:contains a rdfs:Property ;
-    rdfs:domain vault:Directory ;
-    rdfs:range vault:Resource ;
-    rdfs:label "Contains resource" .
-
-vault:parentDirectory a rdfs:Property ;
-    rdfs:domain vault:Resource ;
-    rdfs:range vault:Directory ;
-    rdfs:label "Parent directory" .
-
-vault:hasTag a rdfs:Property ;
-    rdfs:domain vault:Note ;
-    rdfs:range vault:Tag ;
-    rdfs:label "Has tag" .
-
-vault:hasProperty a rdfs:Property ;
-    rdfs:domain vault:Note ;
-    rdfs:range vault:Property ;
-    rdfs:label "Has frontmatter property" .
-
-# Content Structure Properties
-vault:hasSection a rdfs:Property ;
-    rdfs:domain vault:Note ;
-    rdfs:range vault:Section ;
-    rdfs:label "Has section" .
-
-vault:headingLevel a rdfs:Property ;
-    rdfs:domain vault:Heading ;
-    rdfs:range xsd:integer ;
-    rdfs:label "Heading level (1-6)" .
-
-vault:headingText a rdfs:Property ;
-    rdfs:domain vault:Heading ;
+rdftools:headingText a owl:DatatypeProperty, owl:FunctionalProperty ;
+    rdfs:domain rdftools:Heading ;
     rdfs:range xsd:string ;
-    rdfs:label "Heading text content" .
+    rdfs:label "heading text"@en ;
+    rdfs:comment "The text content of a heading, without the markdown # symbols. Used for searching, indexing, and displaying heading titles."@en ;
+    rdfs:isDefinedBy <http://shadr.us/ns/rdf-tools/v1> .
 
-vault:hasTodoItem a rdfs:Property ;
-    rdfs:domain vault:Note ;
-    rdfs:range vault:TodoItem ;
-    rdfs:label "Has todo item" .
-
-vault:todoStatus a rdfs:Property ;
-    rdfs:domain vault:TodoItem ;
+rdftools:textContent a owl:DatatypeProperty ;
+    rdfs:domain rdftools:Section ;
     rdfs:range xsd:string ;
-    rdfs:label "Todo completion status" .
+    rdfs:label "text content"@en ;
+    rdfs:comment "The text content of a section element (paragraph, list item, etc.). Contains the actual text without markdown formatting symbols."@en ;
+    rdfs:isDefinedBy <http://shadr.us/ns/rdf-tools/v1> .
 
-vault:todoText a rdfs:Property ;
-    rdfs:domain vault:TodoItem ;
+rdftools:hasTodoItem a owl:ObjectProperty ;
+    rdfs:domain rdftools:Note ;
+    rdfs:range rdftools:TodoItem ;
+    rdfs:label "has todo item"@en ;
+    rdfs:comment "Indicates that a note contains a todo/checklist item. Todo items track tasks and their completion status within notes."@en ;
+    rdfs:isDefinedBy <http://shadr.us/ns/rdf-tools/v1> .
+
+rdftools:todoStatus a owl:DatatypeProperty, owl:FunctionalProperty ;
+    rdfs:domain rdftools:TodoItem ;
     rdfs:range xsd:string ;
-    rdfs:label "Todo item text" .
+    rdfs:label "todo status"@en ;
+    rdfs:comment "The completion status of a todo item. Common values: 'incomplete' (- [ ]), 'complete' (- [x]), or custom statuses supported by Obsidian plugins."@en ;
+    rdfs:isDefinedBy <http://shadr.us/ns/rdf-tools/v1> .
 
-vault:lineNumber a rdfs:Property ;
-    rdfs:domain [rdfs:subClassOf vault:Section, vault:ListItem] ;
-    rdfs:range xsd:integer ;
-    rdfs:label "Line number in file" .
-
-# Metadata Properties
-vault:aliases a rdfs:Property ;
-    rdfs:domain vault:Note ;
+rdftools:todoText a owl:DatatypeProperty, owl:FunctionalProperty ;
+    rdfs:domain rdftools:TodoItem ;
     rdfs:range xsd:string ;
-    rdfs:label "Alternative names/aliases" .
+    rdfs:label "todo text"@en ;
+    rdfs:comment "The text content of a todo item, excluding the checkbox syntax. Contains the task description and any inline formatting."@en ;
+    rdfs:isDefinedBy <http://shadr.us/ns/rdf-tools/v1> .
 
-vault:cssclass a rdfs:Property ;
-    rdfs:domain vault:Note ;
+rdftools:lineNumber a owl:DatatypeProperty ;
+    rdfs:domain [
+        a owl:Class ;
+        owl:unionOf (rdftools:Section rdftools:ListItem)
+    ] ;
+    rdfs:range xsd:nonNegativeInteger ;
+    rdfs:label "line number"@en ;
+    rdfs:comment "The line number where this element appears in the source file (0-indexed). Useful for precise navigation and linking to specific content locations."@en ;
+    rdfs:isDefinedBy <http://shadr.us/ns/rdf-tools/v1> .
+
+##############################################################################
+# METADATA PROPERTIES - Additional Note Attributes
+##############################################################################
+
+rdftools:aliases a owl:DatatypeProperty ;
+    rdfs:domain rdftools:Note ;
     rdfs:range xsd:string ;
-    rdfs:label "CSS class for styling" .
+    rdfs:label "alias"@en ;
+    rdfs:comment "Alternative names for a note defined in frontmatter. Aliases allow a note to be referenced by multiple names in wiki links and searches. This property can have multiple values."@en ;
+    rdfs:isDefinedBy <http://shadr.us/ns/rdf-tools/v1> .
 
-vault:wordCount a rdfs:Property ;
-    rdfs:domain vault:Note ;
-    rdfs:range xsd:integer ;
-    rdfs:label "Word count" .
+rdftools:cssclass a owl:DatatypeProperty ;
+    rdfs:domain rdftools:Note ;
+    rdfs:range xsd:string ;
+    rdfs:label "CSS class"@en ;
+    rdfs:comment "Custom CSS class assigned to a note via frontmatter. Used for applying specific styling or appearance to individual notes in Obsidian. Multiple classes can be assigned."@en ;
+    rdfs:isDefinedBy <http://shadr.us/ns/rdf-tools/v1> .
+
+rdftools:wordCount a owl:DatatypeProperty, owl:FunctionalProperty ;
+    rdfs:domain rdftools:Note ;
+    rdfs:range xsd:nonNegativeInteger ;
+    rdfs:label "word count"@en ;
+    rdfs:comment "The total number of words in the note's content. Useful for tracking writing progress, finding long/short notes, or analyzing vault statistics."@en ;
+    rdfs:isDefinedBy <http://shadr.us/ns/rdf-tools/v1> .
+
+##############################################################################
+# USAGE NOTES
+##############################################################################
+#
+# STANDARD VOCABULARY REUSE:
+# This ontology reuses Dublin Core Terms for timestamps to improve
+# interoperability with other semantic web tools:
+#
+# - Use dcterms:created for resource creation timestamps
+# - Use dcterms:modified for resource modification timestamps
+# - Use rdfs:label for human-readable display names
+#
+# EXAMPLE USAGE IN DATA:
+#
+# <vault://people/alice.md> a rdftools:Note ;
+#     rdftools:path "people/alice.md" ;
+#     rdftools:name "alice.md" ;
+#     rdfs:label "Alice Smith - Software Engineer" ;
+#     dcterms:created "2025-01-05T10:30:00Z"^^xsd:dateTime ;
+#     dcterms:modified "2025-01-05T14:15:00Z"^^xsd:dateTime ;
+#     rdftools:size 2048 ;
+#     rdftools:wordCount 250 ;
+#     rdftools:linksTo <vault://people/bob.md> ;
+#     rdftools:hasTag <vault://tags/person> ;
+#     rdftools:parentDirectory <vault://people/> .
+#
+##############################################################################
