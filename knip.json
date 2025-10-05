@@ -1,0 +1,30 @@
+{
+  "$schema": "https://unpkg.com/knip@latest/schema.json",
+  "entry": [
+    "src/main.ts"
+  ],
+  "project": [
+    "src/**/*.ts"
+  ],
+  "ignore": [
+    "src/**/*.test.ts",
+    "src/**/__tests__/**",
+    "src/tests/helpers/**"
+  ],
+  "ignoreDependencies": [
+    "obsidian"
+  ],
+  "ignoreBinaries": [
+    "eslint"
+  ],
+  "ignoreExportsUsedInFile": true,
+  "includeEntryExports": false,
+  "ignoreMembers": [
+    "RdfToolsPlugin.onload",
+    "RdfToolsPlugin.onunload",
+    "RdfToolsPlugin.statusBarItemEl",
+    "SparqlQueryDetailsModal.onOpen",
+    "SparqlQueryDetailsModal.onClose",
+    "Logger.updateSettings"
+  ]
+}

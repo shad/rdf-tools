@@ -4,10 +4,7 @@ import { GraphService } from '../GraphService';
 import { QueryExecutorService } from '../QueryExecutorService';
 import { PrefixService } from '../PrefixService';
 import { App } from 'obsidian';
-import { Store, DataFactory } from 'n3';
 import { MockTFile, MockTFolder } from '../../tests/helpers/setup';
-
-const { namedNode, literal } = DataFactory;
 
 // Mock the text import
 vi.mock('../../../v1.ttl?text', () => ({

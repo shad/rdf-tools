@@ -10,7 +10,6 @@ import { GraphService } from '@/services/GraphService';
 import { SparqlParserService } from '@/services/SparqlParserService';
 import { PrefixService } from '@/services/PrefixService';
 import { SparqlQuery, SparqlQueryFactory } from '@/models/SparqlQuery';
-import { MockTFile } from '@/tests/helpers/setup';
 import { createMockBlockLocation, createCommonPrefixes } from '@/tests/helpers/test-utils';
 import { Graph } from '@/models/Graph';
 import type { App } from 'obsidian';

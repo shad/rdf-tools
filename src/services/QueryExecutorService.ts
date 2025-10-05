@@ -288,13 +288,6 @@ export class QueryExecutorService {
   }
 
   /**
-   * Get all currently executing queries
-   */
-  getActiveExecutions(): string[] {
-    return Array.from(this.activeExecutions.keys());
-  }
-
-  /**
    * Execute query with single store containing named graphs (the correct RDF approach)
    */
   private async executeQueryWithSources(

@@ -234,7 +234,6 @@ shad:TestEntity a ex:Entity ;
     });
 
     it('should allow prefix expansion for user-defined prefixes', () => {
-      const globalPrefixes = mockPrefixService.getGlobalPrefixes();
       const context = mockPrefixService.createPrefixContext();
 
       // Test user-defined prefix expansion

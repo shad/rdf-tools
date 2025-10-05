@@ -39,7 +39,7 @@ export class MetaGraphService {
     const parser = new Parser();
 
     return new Promise((resolve, reject) => {
-      parser.parse(ontologyContent, (error, quad, prefixes) => {
+      parser.parse(ontologyContent, (error, quad, _prefixes) => {
         if (error) {
           reject(new Error(`Failed to parse ontology: ${error.message}`));
           return;

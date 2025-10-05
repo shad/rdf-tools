@@ -13,7 +13,9 @@
       "WebFetch(domain:github.com)",
       "Bash(grep:*)",
       "Bash(ls:*)",
-      "Bash(riot:*)"
+      "Bash(riot:*)",
+      "Bash(cat:*)",
+      "Bash(npm run find-unused:*)"
     ],
     "deny": [],
     "ask": []

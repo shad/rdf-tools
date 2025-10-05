@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { RdfToolsService } from '../RdfToolsService';
-import { TFile, App, MarkdownPostProcessorContext } from 'obsidian';
+import { App, MarkdownPostProcessorContext } from 'obsidian';
 
 // Mock Obsidian Component class
 vi.mock('obsidian', async () => {

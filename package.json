@@ -13,14 +13,22 @@
 		"format": "prettier --write src/**/*.ts",
 		"format:check": "prettier --check src/**/*.ts",
 		"typecheck": "tsc -noEmit -skipLibCheck",
+		"find-unused": "knip --include classMembers --no-progress",
 		"test": "vitest",
 		"test:run": "vitest run",
 		"test:ui": "vitest --ui",
 		"test:coverage": "vitest run --coverage",
 		"test:watch": "vitest --watch",
-		"check-all": "npm run format && npm run lint:fix && npm run typecheck && npm run test:run"
+		"check-all": "npm run format && npm run lint:fix && npm run find-unused && npm run typecheck && npm run test:run"
 	},
-	"keywords": ["obsidian", "rdf", "sparql", "semantic-web", "knowledge-graph", "turtle"],
+	"keywords": [
+		"obsidian",
+		"rdf",
+		"sparql",
+		"semantic-web",
+		"knowledge-graph",
+		"turtle"
+	],
 	"author": "Shad Reynolds",
 	"license": "MIT",
 	"repository": {
@@ -39,6 +47,7 @@
 		"@vitest/ui": "^3.2.4",
 		"esbuild": "^0.19.0",
 		"happy-dom": "^18.0.1",
+		"knip": "^5.64.1",
 		"obsidian": "latest",
 		"prettier": "^3.6.2",
 		"tslib": "2.6.2",

@@ -118,27 +118,6 @@ export class CodeBlockExtractorService {
   }
 
   /**
-   * Extract only SPARQL code blocks and convert to SparqlQuery models
-   */
-  extractSparqlQueries(
-    options: ExtractCodeBlocksOptions
-  ): ReturnType<typeof SparqlQueryFactory.createSparqlQuery>[] {
-    const codeBlocks = this.extractCodeBlocks({
-      ...options,
-      languages: ['sparql'],
-    });
-
-    return codeBlocks.map(block => {
-      const createOptions: CreateSparqlQueryOptions = {
-        location: block.location,
-        queryString: block.content,
-      };
-
-      return SparqlQueryFactory.createSparqlQuery(createOptions);
-    });
-  }
-
-  /**
    * Check if content contains code blocks of specified languages
    */
   hasCodeBlocks(

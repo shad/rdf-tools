@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MetaGraphService } from '../MetaGraphService';
 import { PrefixService } from '../PrefixService';
-import { App, TFile } from 'obsidian';
+import { App } from 'obsidian';
 import { Store } from 'n3';
 import { MockTFile, MockTFolder } from '../../tests/helpers/setup';
 

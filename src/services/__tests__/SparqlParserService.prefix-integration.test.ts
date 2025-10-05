@@ -2,7 +2,7 @@
  * Tests for SparqlParserService global prefix integration with settings
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { SparqlParserService } from '@/services/SparqlParserService';
 import { PrefixService } from '@/services/PrefixService';
 

@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { QueryExecutorService } from '../QueryExecutorService';
 import { GraphService } from '../GraphService';
 import { PrefixService } from '../PrefixService';
-import { SparqlQuery, SparqlQueryFactory } from '../../models/SparqlQuery';
+import { SparqlQueryFactory } from '../../models/SparqlQuery';
 import { App, TFile } from 'obsidian';
 
 /**

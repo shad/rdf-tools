@@ -10,7 +10,6 @@ import { MockTFile } from '@/tests/helpers/setup';
 import { createCommonPrefixes } from '@/tests/helpers/test-utils';
 import type { App } from 'obsidian';
 import type { PrefixService } from '@/services/PrefixService';
-import type { MarkdownGraphParser, MarkdownParseResult } from '@/services/MarkdownGraphParser';
 
 // Mock dependencies
 let mockApp: App;

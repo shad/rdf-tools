@@ -340,7 +340,6 @@ describe('RdfToolsService - Real Settings Bug Reproduction', () => {
       };
 
       const rdfService = new RdfToolsService(mockApp, mockPlugin, settingsWithShad, mockLogger);
-      const sparqlParser = rdfService.getSparqlParserService();
 
       // Get the prefix service that the SPARQL parser is using
       const prefixService = rdfService.getPrefixService();
