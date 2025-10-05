@@ -68,7 +68,7 @@ describe('RdfToolsService Integration Tests', () => {
       const aliceFile = {
         path: 'people/alice.md',
         extension: 'md',
-      } as TFile;
+      };
 
       const aliceContent = `# Alice Smith
 
@@ -144,7 +144,7 @@ describe('RdfToolsService Integration Tests', () => {
       const aliceFile = {
         path: 'people/alice.md',
         extension: 'md',
-      } as TFile;
+      };
 
       const aliceContent = `# Alice Smith
 
@@ -214,7 +214,7 @@ WHERE {
 
   describe('Testing the Real Execution Order Problem', () => {
     it('should demonstrate the wrong execution order in handleSparqlBlock', async () => {
-      const file = { path: 'test.md', extension: 'md' } as TFile;
+      const file = { path: 'test.md', extension: 'md', stat: { ctime: 0, mtime: 0, size: 0 } };
       const queryWithVault = `SELECT ?x FROM <vault://> WHERE { ?x ?p ?o }`;
 
       // Track the order of operations

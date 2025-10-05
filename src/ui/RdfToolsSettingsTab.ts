@@ -1,5 +1,5 @@
 import { App, PluginSettingTab, Setting } from 'obsidian';
-import { RdfToolsPlugin } from '../RdfToolsPlugin';
+import { RdfToolsPlugin } from '@/RdfToolsPlugin';
 
 export class RdfToolsSettingsTab extends PluginSettingTab {
   plugin: RdfToolsPlugin;

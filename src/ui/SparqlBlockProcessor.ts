@@ -5,7 +5,7 @@ import {
   Plugin,
   MarkdownView,
 } from 'obsidian';
-import { safeTFileFromPath } from '../models/TypeGuards';
+import { safeTFileFromPath } from '@/models/TypeGuards';
 import {
   SparqlParseResult,
   SparqlParseError,
@@ -13,7 +13,7 @@ import {
 import { QueryResults } from '@/models';
 import type { PrefixService } from '@/services/PrefixService';
 import { formatLiteralForDisplay } from '@/utils/literal-formatting';
-import { Logger } from '@/utils/Logger';
+import { Logger, NullLogger } from '@/utils/Logger';
 
 /**
  * Options for rendering code block results
@@ -53,17 +53,7 @@ export class SparqlBlockProcessor extends Component {
     super();
 
     // Ensure logger is always available
-    this.logger =
-      logger ||
-      ({
-        info: () => {},
-        debug: () => {},
-        warn: () => {},
-        error: () => {},
-        updateSettings: () => {},
-        enableDebugLogging: false,
-        prefix: 'RDF Tools:',
-      } as unknown as Logger);
+    this.logger = logger ?? NullLogger.create();
   }
 
   private logger: Logger;
@@ -94,7 +84,6 @@ export class SparqlBlockProcessor extends Component {
         const editHeader = el.ownerDocument.createElement('div');
         editHeader.classList.add('rdf-sparql-edit-header');
         editHeader.textContent = 'View query';
-        // Cursor style now handled by CSS class
         editHeader.title = 'Click to edit query';
 
         // Add click handler for edit functionality
@@ -218,7 +207,7 @@ export class SparqlBlockProcessor extends Component {
       containerClasses: container.className,
     });
 
-    let resultEl = container.querySelector('.rdf-sparql-result') as HTMLElement;
+    let resultEl = container.querySelector<HTMLElement>('.rdf-sparql-result');
 
     // If the result element doesn't exist, try to find or create it
     if (!resultEl) {
@@ -227,9 +216,9 @@ export class SparqlBlockProcessor extends Component {
       );
 
       // Try a more conservative approach: look for any existing structure we can use
-      let resultsContainer = container.querySelector(
+      let resultsContainer = container.querySelector<HTMLElement>(
         '.rdf-sparql-results-container'
-      ) as HTMLElement;
+      );
 
       // If no results container exists, create the minimal needed structure
       if (!resultsContainer) {

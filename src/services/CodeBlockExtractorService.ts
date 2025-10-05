@@ -42,6 +42,22 @@ export class CodeBlockExtractorService {
   private readonly codeBlockRegex = /```(\w+)\n([\s\S]*?)\n```/g;
 
   /**
+   * Create a placeholder TFile for utility methods that don't need real file info
+   * Note: vault is intentionally null as these placeholders are never used with vault operations
+   */
+  private createPlaceholderFile(): TFile {
+    return {
+      path: '',
+      name: '',
+      basename: '',
+      extension: '',
+      stat: { ctime: 0, mtime: 0, size: 0 },
+      vault: null as unknown as never,
+      parent: null,
+    } as TFile;
+  }
+
+  /**
    * Extract code blocks of specified languages from markdown content
    */
   extractCodeBlocks(options: ExtractCodeBlocksOptions): CodeBlock[] {
@@ -130,7 +146,7 @@ export class CodeBlockExtractorService {
     languages: string[] = ['turtle', 'sparql']
   ): boolean {
     const blocks = this.extractCodeBlocks({
-      file: {} as TFile, // Not used for this check
+      file: this.createPlaceholderFile(),
       content,
       languages,
     });
@@ -212,7 +228,7 @@ export class CodeBlockExtractorService {
     languages: string[] = ['turtle', 'sparql']
   ): { inBlock: boolean; block?: CodeBlock } {
     const blocks = this.extractCodeBlocks({
-      file: {} as TFile, // Not used for this check
+      file: this.createPlaceholderFile(),
       content,
       languages,
     });
@@ -242,7 +258,7 @@ export class CodeBlockExtractorService {
     otherBlocks: number;
   } {
     const allBlocks = this.extractCodeBlocks({
-      file: {} as TFile, // Not used for this check
+      file: this.createPlaceholderFile(),
       content,
       languages: [], // Extract all languages for stats
     });

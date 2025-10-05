@@ -148,32 +148,48 @@ export const formatAskResults = (result: boolean): AskResult => {
 };
 
 /**
+ * Type guard to check if binding has Comunica structure
+ */
+function isComunicaBinding(binding: unknown): binding is ComunicaBinding {
+  return (
+    typeof binding === 'object' &&
+    binding !== null &&
+    'entries' in binding &&
+    binding.entries !== null &&
+    binding.entries !== undefined
+  );
+}
+
+/**
  * Pure function: Transform Comunica binding to processed binding
  */
 export const transformBinding = (
   binding: unknown
 ): Record<string, ProcessedBinding> => {
   const bindingObj: Record<string, ProcessedBinding> = {};
-  const comunicaBinding = binding as ComunicaBinding;
 
-  if (!comunicaBinding?.entries) {
+  if (!isComunicaBinding(binding)) {
+    return {};
+  }
+
+  if (!binding.entries) {
     return {};
   }
 
   // Handle Immutable.js Map (used by Comunica)
-  if (isComunicaBindingEntries(comunicaBinding.entries)) {
-    for (const [variable, term] of comunicaBinding.entries.entrySeq()) {
+  if (isComunicaBindingEntries(binding.entries)) {
+    for (const [variable, term] of binding.entries.entrySeq()) {
       const varName = variable.value || variable.toString();
       bindingObj[varName] = formatTermForBinding(term);
     }
-  } else if (comunicaBinding.entries instanceof Map) {
+  } else if (binding.entries instanceof Map) {
     // Standard JavaScript Map
-    for (const [variable, term] of comunicaBinding.entries.entries()) {
+    for (const [variable, term] of binding.entries.entries()) {
       bindingObj[variable] = formatTermForBinding(term);
     }
-  } else if (typeof comunicaBinding.entries === 'object') {
+  } else if (typeof binding.entries === 'object') {
     // Plain object fallback
-    for (const [varName, term] of Object.entries(comunicaBinding.entries)) {
+    for (const [varName, term] of Object.entries(binding.entries)) {
       if (term && typeof term === 'object' && 'value' in term) {
         bindingObj[varName] = formatTermForBinding(term);
       }

@@ -38,7 +38,7 @@ describe('QueryExecutorService - FROM Clause Regression Tests', () => {
                 ctime: Date.now(),
                 mtime: Date.now(),
               },
-            } as TFile;
+            };
           }
           return null;
         },
@@ -103,7 +103,7 @@ describe('QueryExecutorService - FROM Clause Regression Tests', () => {
             ctime: Date.now(),
             mtime: Date.now(),
           },
-        } as TFile,
+        },
         startLine: 1,
         endLine: 8,
         startColumn: 1,
@@ -267,7 +267,7 @@ describe('QueryExecutorService - FROM Clause Regression Tests', () => {
             ctime: Date.now(),
             mtime: Date.now(),
           },
-        } as TFile,
+        },
         startLine: 1,
         endLine: 8,
         startColumn: 1,

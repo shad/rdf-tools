@@ -284,7 +284,7 @@ describe('MetaGraphService', () => {
           ctime: Date.now(),
           mtime: Date.now(),
         }
-      } as TFile;
+      };
 
       mockApp.vault.getAllLoadedFiles = vi.fn(() => [mockFileWithSlash]);
       mockApp.vault.getMarkdownFiles = vi.fn(() => [mockFileWithSlash]);

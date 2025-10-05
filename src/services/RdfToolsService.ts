@@ -20,6 +20,13 @@ import { MarkdownErrorReporter } from './MarkdownErrorReporter';
 import { Logger } from '@/utils/Logger';
 
 /**
+ * Type guard to check if a view has a file property
+ */
+function isFileView(view: unknown): view is { file?: TFile } {
+  return typeof view === 'object' && view !== null && 'file' in view;
+}
+
+/**
  * Main orchestrating service that coordinates all RDF processing
  */
 export class RdfToolsService extends Component {
@@ -186,9 +193,8 @@ export class RdfToolsService extends Component {
       } catch (renderError) {
         this.logger.error('Error rendering SPARQL parse result:', renderError);
         // Fallback: show basic error message
-        const resultEl = container.querySelector(
-          '.rdf-sparql-result'
-        ) as HTMLElement;
+        const resultEl =
+          container.querySelector<HTMLElement>('.rdf-sparql-result');
         if (resultEl) {
           // Clear existing content
           while (resultEl.firstChild) {
@@ -241,9 +247,8 @@ export class RdfToolsService extends Component {
           } catch (renderError) {
             this.logger.error('Error rendering SPARQL results:', renderError);
             // Fallback: show basic error message
-            const resultEl = container.querySelector(
-              '.rdf-sparql-result'
-            ) as HTMLElement;
+            const resultEl =
+              container.querySelector<HTMLElement>('.rdf-sparql-result');
             if (resultEl) {
               // Clear existing content
               while (resultEl.firstChild) {
@@ -267,9 +272,8 @@ export class RdfToolsService extends Component {
       this.logger.error('Error processing SPARQL block:', error);
 
       // Show error in UI
-      const resultEl = container.querySelector(
-        '.rdf-sparql-result'
-      ) as HTMLElement;
+      const resultEl =
+        container.querySelector<HTMLElement>('.rdf-sparql-result');
       if (resultEl) {
         // Clear existing content
         while (resultEl.firstChild) {
@@ -526,8 +530,10 @@ export class RdfToolsService extends Component {
       // Get all markdown views for this file
       const leaves = this.app.workspace.getLeavesOfType('markdown');
       const fileLeaf = leaves.find(leaf => {
-        const view = leaf.view as { file?: TFile };
-        return view.file && view.file.path === file.path;
+        if (!isFileView(leaf.view)) {
+          return false;
+        }
+        return leaf.view.file && leaf.view.file.path === file.path;
       });
 
       if (!fileLeaf) {
@@ -620,8 +626,10 @@ export class RdfToolsService extends Component {
       // Check if the file is still open
       const leaves = this.app.workspace.getLeavesOfType('markdown');
       const fileStillOpen = leaves.some(leaf => {
-        const view = leaf.view as { file?: TFile };
-        return view.file && view.file.path === queryInfo.file.path;
+        if (!isFileView(leaf.view)) {
+          return false;
+        }
+        return leaf.view.file && leaf.view.file.path === queryInfo.file.path;
       });
 
       if (!fileStillOpen) {
@@ -692,9 +700,8 @@ export class RdfToolsService extends Component {
       } catch (renderError) {
         this.logger.error('Error rendering SPARQL results:', renderError);
         // Fallback: show basic error message
-        const resultEl = queryInfo.container.querySelector(
-          '.rdf-sparql-result'
-        ) as HTMLElement;
+        const resultEl =
+          queryInfo.container.querySelector<HTMLElement>('.rdf-sparql-result');
         if (resultEl) {
           // Clear existing content
           while (resultEl.firstChild) {
@@ -710,9 +717,8 @@ export class RdfToolsService extends Component {
       this.logger.error('Error re-executing SPARQL query:', error);
 
       // Show error in UI
-      const resultEl = queryInfo.container.querySelector(
-        '.rdf-sparql-result'
-      ) as HTMLElement;
+      const resultEl =
+        queryInfo.container.querySelector<HTMLElement>('.rdf-sparql-result');
       if (resultEl) {
         // Clear existing content
         while (resultEl.firstChild) {

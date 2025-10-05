@@ -1,5 +1,5 @@
 import { App, Modal, Setting } from 'obsidian';
-import { QueryExecutionDetails } from '../models/QueryExecutionDetails';
+import { QueryExecutionDetails } from '@/models/QueryExecutionDetails';
 
 /**
  * Modal for displaying detailed SPARQL query execution information

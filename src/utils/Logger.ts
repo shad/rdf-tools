@@ -59,3 +59,44 @@ export class Logger {
     console.error(`${this.prefix} ${message}`, ...args);
   }
 }
+
+/**
+ * Null logger implementation for cases where logging is not needed
+ * Extends Logger to ensure compatibility
+ */
+export class NullLogger extends Logger {
+  constructor() {
+    // Create a fake settings object to satisfy the Logger constructor
+    super({ enableDebugLogging: false } as RdfToolsSettings);
+  }
+
+  /**
+   * Override all methods to do nothing
+   */
+  updateSettings(): void {
+    // No-op
+  }
+
+  info(): void {
+    // No-op
+  }
+
+  debug(): void {
+    // No-op
+  }
+
+  warn(): void {
+    // No-op
+  }
+
+  error(): void {
+    // No-op - even errors are silenced in null logger
+  }
+
+  /**
+   * Create a null logger instance
+   */
+  static create(): NullLogger {
+    return new NullLogger();
+  }
+}

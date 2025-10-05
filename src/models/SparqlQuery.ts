@@ -220,7 +220,7 @@ export class SparqlQueryFactory {
   /**
    * Generate a unique ID for a SPARQL query
    */
-  static generateQueryId(location: BlockLocation): string {
+  static generateQueryId(_location: BlockLocation): string {
     // Use random ID to ensure uniqueness, especially for multiple queries on same page
     return `sparql-query:${Math.random().toString(36).substr(2, 9)}`;
   }

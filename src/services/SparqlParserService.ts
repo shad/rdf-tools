@@ -182,7 +182,9 @@ export class SparqlParserService {
       const parseTimeMs = Date.now() - startTime;
       return {
         success: false,
-        error: this.convertSparqlJsError(error),
+        error: this.convertSparqlJsError(
+          error instanceof Error ? error : new Error(String(error))
+        ),
         parseTimeMs,
       };
     }

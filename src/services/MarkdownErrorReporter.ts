@@ -3,6 +3,20 @@ import { TurtleBlockError } from './MarkdownGraphParser';
 import { Logger } from '@/utils/Logger';
 
 /**
+ * Type guard to check if a view has a file property
+ */
+function isFileView(view: unknown): view is { file?: TFile } {
+  return typeof view === 'object' && view !== null && 'file' in view;
+}
+
+/**
+ * Type guard to check if a view has a contentEl property
+ */
+function isContentView(view: unknown): view is { contentEl?: HTMLElement } {
+  return typeof view === 'object' && view !== null && 'contentEl' in view;
+}
+
+/**
  * Service for reporting parsing errors in markdown files
  */
 export class MarkdownErrorReporter {
@@ -28,7 +42,10 @@ export class MarkdownErrorReporter {
     // Find the markdown view for this file
     const leaves = this.app.workspace.getLeavesOfType('markdown');
     const targetLeaf = leaves.find(leaf => {
-      const file = (leaf.view as { file?: TFile }).file;
+      if (!isFileView(leaf.view)) {
+        return false;
+      }
+      const file = leaf.view.file;
       return file && file.path === filePath;
     });
 
@@ -37,9 +54,12 @@ export class MarkdownErrorReporter {
       return;
     }
 
-    const view = targetLeaf.view as { contentEl?: HTMLElement };
-    const contentEl = view.contentEl;
+    if (!isContentView(targetLeaf.view)) {
+      this.logger.warn(`View does not have contentEl for file ${filePath}`);
+      return;
+    }
 
+    const contentEl = targetLeaf.view.contentEl;
     if (!contentEl) {
       this.logger.warn(`Could not find content element for file ${filePath}`);
       return;

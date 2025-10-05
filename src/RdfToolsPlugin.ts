@@ -13,10 +13,10 @@ import { RdfToolsService } from './services/RdfToolsService';
 import { Logger } from './utils/Logger';
 
 export class RdfToolsPlugin extends Plugin {
-  settings: RdfToolsSettings;
-  statusBarItemEl: HTMLElement;
-  rdfService: RdfToolsService;
-  logger: Logger;
+  settings!: RdfToolsSettings;
+  statusBarItemEl!: HTMLElement;
+  rdfService!: RdfToolsService;
+  logger!: Logger;
 
   async onload() {
     await this.loadSettings();

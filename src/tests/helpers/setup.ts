@@ -6,8 +6,8 @@ import { TFolder, Vault } from 'obsidian';
 
 // Mock Obsidian's TFile class for testing
 export class MockTFile {
-  vault: Vault;
-  parent: TFolder;
+  vault!: Vault;
+  parent!: TFolder;
   path: string;
   name: string;
   basename: string;
@@ -31,8 +31,8 @@ export class MockTFile {
 
 // Mock Obsidian's TFolder class for testing
 export class MockTFolder {
-  vault: Vault;
-  parent: TFolder;
+  vault!: Vault;
+  parent!: TFolder;
   path: string;
   name: string;
   children: any[];
